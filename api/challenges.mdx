@@ -1,0 +1,174 @@
+---
+title: "Challenges"
+description: "API endpoints for game challenges"
+---
+
+# Challenges
+
+Challenges allow you to invite a specific user to a game or accept incoming game requests. The `challenge:write` OAuth scope is required for creating, accepting, and declining challenges.
+
+---
+
+## Create a challenge
+
+```
+POST /api/challenge/{user}
+```
+
+Sends a game challenge to another player. Requires the `challenge:write` scope (and optionally `bot:play` for bot accounts).
+
+<ParamField path="user" type="string" required>
+  The username of the player to challenge.
+</ParamField>
+
+### Body parameters
+
+<ParamField body="rated" type="boolean">
+  Whether the game is rated. Default: `false`.
+</ParamField>
+
+<ParamField body="clock.limit" type="integer">
+  Clock initial time in seconds (e.g. `300` for 5 minutes). Required for a clock game.
+</ParamField>
+
+<ParamField body="clock.increment" type="integer">
+  Clock increment in seconds (e.g. `3`). Required for a clock game.
+</ParamField>
+
+<ParamField body="days" type="integer">
+  Days per move for correspondence games (1, 2, 3, 5, 7, 10, or 14). Cannot be combined with `clock`.
+</ParamField>
+
+<ParamField body="color" type="string">
+  Which color to play: `white`, `black`, or `random`. Default: `random`.
+</ParamField>
+
+<ParamField body="variant" type="string">
+  Variant key. One of: `standard`, `frisian`, `frysk`, `antidraughts`, `breakthrough`, `russian`, `brazilian`, `pool`, `english`. Default: `standard`.
+</ParamField>
+
+<ParamField body="microMatch" type="boolean">
+  Whether to create a micro-match (2 games, one per color).
+</ParamField>
+
+```bash
+# 5+3 rated standard challenge
+curl -X POST \
+  -H "Authorization: Bearer lip_yourtoken" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d 'rated=true&clock.limit=300&clock.increment=3&color=random&variant=standard' \
+  https://lidraughts.org/api/challenge/targetplayer
+```
+
+A successful response returns the challenge object:
+
+```json
+{
+  "challenge": {
+    "id": "abcd1234",
+    "url": "https://lidraughts.org/abcd1234",
+    "status": "created",
+    "challenger": { "id": "me", "rating": 1800 },
+    "destUser": { "id": "targetplayer", "rating": 1750 },
+    "variant": { "key": "standard", "name": "Standard" },
+    "rated": true,
+    "timeControl": { "type": "clock", "limit": 300, "increment": 3 },
+    "color": "random"
+  }
+}
+```
+
+---
+
+## Create an external challenge
+
+```
+POST /api/challenge/external/{user}
+```
+
+Creates a challenge between two other users on behalf of an external system (e.g. a tournament organizer). The `user` in the path is the challenger and `opponent` in the body is the challenged player. Does not require an OAuth token but is rate-limited per IP.
+
+<ParamField path="user" type="string" required>
+  The username of the challenger.
+</ParamField>
+
+### Body parameters
+
+<ParamField body="opponent" type="string" required>
+  The username of the opponent.
+</ParamField>
+
+<ParamField body="rated" type="boolean">
+  Whether the game is rated.
+</ParamField>
+
+<ParamField body="clock.limit" type="integer">
+  Clock initial time in seconds.
+</ParamField>
+
+<ParamField body="clock.increment" type="integer">
+  Clock increment in seconds.
+</ParamField>
+
+<ParamField body="days" type="integer">
+  Days per move for correspondence.
+</ParamField>
+
+<ParamField body="color" type="string">
+  `white`, `black`, or `random`.
+</ParamField>
+
+<ParamField body="variant" type="string">
+  Variant key.
+</ParamField>
+
+<ParamField body="startsAt" type="integer">
+  Timestamp (ms) when the game should start.
+</ParamField>
+
+```bash
+curl -X POST \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d 'opponent=player2&rated=true&clock.limit=300&clock.increment=0' \
+  https://lidraughts.org/api/challenge/external/player1
+```
+
+---
+
+## Accept a challenge
+
+```
+POST /api/challenge/{id}/accept
+```
+
+Accepts an incoming challenge. Requires `challenge:write` scope (or `bot:play` for bots).
+
+<ParamField path="id" type="string" required>
+  The 8-character challenge ID.
+</ParamField>
+
+```bash
+curl -X POST \
+  -H "Authorization: Bearer lip_yourtoken" \
+  https://lidraughts.org/api/challenge/abcd1234/accept
+```
+
+---
+
+## Decline a challenge
+
+```
+POST /api/challenge/{id}/decline
+```
+
+Declines an incoming challenge. Requires `challenge:write` scope (or `bot:play` for bots).
+
+<ParamField path="id" type="string" required>
+  The 8-character challenge ID.
+</ParamField>
+
+```bash
+curl -X POST \
+  -H "Authorization: Bearer lip_yourtoken" \
+  https://lidraughts.org/api/challenge/abcd1234/decline
+```

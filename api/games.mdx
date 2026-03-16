@@ -1,0 +1,234 @@
+---
+title: "Games"
+description: "API endpoints for game data and exports"
+---
+
+# Games
+
+## PDN format
+
+Lidraughts exports games in **PDN** (Portable Draughts Notation), the standard notation for draughts games — analogous to PGN in chess. Moves use numeric square notation (e.g. `32-28`, `3227` for UCI).
+
+JSON export is also available by sending the `Accept: application/x-ndjson` header.
+
+---
+
+## Get a single game
+
+```
+GET /api/game/{id}
+```
+
+Returns metadata for a single game.
+
+<ParamField path="id" type="string" required>
+  The 8-character game ID.
+</ParamField>
+
+<ParamField query="with_moves" type="boolean">
+  Include the move list.
+</ParamField>
+
+<ParamField query="with_analysis" type="boolean">
+  Include computer analysis.
+</ParamField>
+
+<ParamField query="with_fens" type="boolean">
+  Include FEN positions after each move.
+</ParamField>
+
+<ParamField query="with_opening" type="boolean">
+  Include opening information.
+</ParamField>
+
+<ParamField query="with_movetimes" type="boolean">
+  Include move times.
+</ParamField>
+
+```bash
+curl https://lidraughts.org/api/game/abcd1234
+```
+
+---
+
+## Export games by user (API)
+
+```
+GET /api/games/user/{username}
+```
+
+Exports all games of a user as a stream of PDN or NDJSON. Supports rich filtering.
+
+<ParamField path="username" type="string" required>
+  The username whose games to export.
+</ParamField>
+
+<ParamField query="since" type="integer">
+  Download games played after this timestamp (milliseconds since Unix epoch).
+</ParamField>
+
+<ParamField query="until" type="integer">
+  Download games played before this timestamp (milliseconds since Unix epoch).
+</ParamField>
+
+<ParamField query="max" type="integer">
+  Maximum number of games to download.
+</ParamField>
+
+<ParamField query="vs" type="string">
+  Filter by opponent username.
+</ParamField>
+
+<ParamField query="rated" type="boolean">
+  Filter by rated (`true`) or casual (`false`) games.
+</ParamField>
+
+<ParamField query="perfType" type="string">
+  Comma-separated performance types to filter by. E.g. `standard,frisian`.
+</ParamField>
+
+<ParamField query="color" type="string">
+  Filter by the color the user played: `white` or `black`.
+</ParamField>
+
+<ParamField query="analysed" type="boolean">
+  Filter by whether the game was computer-analysed.
+</ParamField>
+
+<ParamField query="ongoing" type="boolean">
+  Include ongoing games. By default only finished games are exported.
+</ParamField>
+
+<ParamField query="moves" type="boolean">
+  Include moves in the export. Default: `true`.
+</ParamField>
+
+<ParamField query="tags" type="boolean">
+  Include PDN tags. Default: `true`.
+</ParamField>
+
+<ParamField query="clocks" type="boolean">
+  Include clock comments in PDN.
+</ParamField>
+
+<ParamField query="evals" type="boolean">
+  Include analysis evaluations.
+</ParamField>
+
+<ParamField query="algebraic" type="boolean">
+  Export moves in algebraic notation rather than numeric squares.
+</ParamField>
+
+<Tabs>
+  <Tab title="PDN">
+    ```bash
+    curl --no-buffer \
+      "https://lidraughts.org/api/games/user/draughtsmaster?max=100&rated=true" \
+      > games.pdn
+    ```
+  </Tab>
+  <Tab title="NDJSON">
+    ```bash
+    curl --no-buffer \
+      -H "Accept: application/x-ndjson" \
+      "https://lidraughts.org/api/games/user/draughtsmaster?max=100" \
+      > games.ndjson
+    ```
+  </Tab>
+</Tabs>
+
+---
+
+## Export games by user (browser)
+
+```
+GET /games/export/{username}
+```
+
+Same as the API endpoint above but accessible without an OAuth token. Useful for linking from a web page. Accepts the same query parameters.
+
+---
+
+## Export games by IDs
+
+```
+POST /games/export/_ids
+```
+
+Exports up to 300 games by their IDs. Send the IDs as a comma-separated plain-text body.
+
+### Request body
+
+Comma-separated game IDs:
+
+```
+abcd1234,efgh5678,ijkl9012
+```
+
+```bash
+curl -X POST \
+  -H "Content-Type: text/plain" \
+  --data 'abcd1234,efgh5678' \
+  https://lidraughts.org/games/export/_ids
+```
+
+Accepts the same `moves`, `tags`, `clocks`, `evals`, and `algebraic` query parameters as the user export.
+
+---
+
+## Export a single game as PDN
+
+```
+GET /game/export/{gameId}.pdn
+GET /game/export/{gameId}
+```
+
+Downloads a single game in PDN or JSON format.
+
+<ParamField path="gameId" type="string" required>
+  The 8-character game ID.
+</ParamField>
+
+```bash
+curl https://lidraughts.org/game/export/abcd1234.pdn
+```
+
+---
+
+## Export a study as PDN
+
+```
+GET /study/{id}.pdn
+```
+
+Downloads all chapters of a study in PDN format.
+
+<ParamField path="id" type="string" required>
+  The 8-character study ID.
+</ParamField>
+
+```bash
+curl https://lidraughts.org/study/abcd1234.pdn
+```
+
+---
+
+## Export a study chapter as PDN
+
+```
+GET /study/{id}/{chapterId}.pdn
+```
+
+Downloads a single chapter from a study.
+
+<ParamField path="id" type="string" required>
+  The 8-character study ID.
+</ParamField>
+
+<ParamField path="chapterId" type="string" required>
+  The 8-character chapter ID.
+</ParamField>
+
+```bash
+curl https://lidraughts.org/study/abcd1234/efgh5678.pdn
+```

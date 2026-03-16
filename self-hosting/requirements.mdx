@@ -1,0 +1,147 @@
+---
+title: "Requirements"
+description: "System requirements for self-hosting Lidraughts"
+---
+
+Lidraughts is a Scala/Play application backed by MongoDB. Running your own instance requires several runtime and build-time dependencies. This page lists everything you need before you begin installation.
+
+## Requirements summary
+
+| Dependency | Minimum version | Notes |
+|---|---|---|
+| Operating system | Linux (64-bit) | Ubuntu 20.04 LTS or Debian 11 recommended |
+| JDK | 8 (1.8) | OpenJDK 8 or later; compiled to JVM target 1.8 |
+| Scala | 2.11.12 | Managed by SBT — no manual install required |
+| SBT | 0.13.18 | The Scala build tool |
+| MongoDB | 3.x or later | URI configured in `mongodb.uri` |
+| Node.js | ≥ 10 | Required for building the UI |
+| Yarn | 1.x | Workspace-aware package manager |
+| RAM | 4 GB minimum | 2–2.5 GB heap allocated to the JVM alone |
+| CPU | 2+ cores | More cores improve SBT compile times |
+| Disk | 4 GB+ | Source, compiled artifacts, and MongoDB data |
+
+## Operating system
+
+Linux is the only officially supported platform. The startup scripts (`bin/dev`) are POSIX shell scripts. Windows users can adapt the equivalent `bin/dev.bat` file, though running inside WSL2 is generally more reliable.
+
+## Java
+
+Lidraughts targets **JVM 1.8**. The compiler flag `-target:jvm-1.8` is set in `BuildSettings.scala`. Use OpenJDK 8 or a later release that supports `-source`/`-target` 1.8.
+
+<Tabs>
+  <Tab title="Debian / Ubuntu">
+    ```bash
+    sudo apt-get install openjdk-11-jdk
+    ```
+  </Tab>
+  <Tab title="Fedora / RHEL">
+    ```bash
+    sudo dnf install java-11-openjdk-devel
+    ```
+  </Tab>
+  <Tab title="Manual (SDKMAN)">
+    ```bash
+    curl -s "https://get.sdkman.io" | bash
+    sdk install java 11.0.22-open
+    ```
+  </Tab>
+</Tabs>
+
+Verify:
+
+```bash
+java -version
+```
+
+## Scala and SBT
+
+The Scala version (`2.11.12`) is declared in `project/BuildSettings.scala` and is downloaded automatically by SBT when you first run a build. You only need to install SBT itself.
+
+<Tabs>
+  <Tab title="Debian / Ubuntu">
+    ```bash
+    echo "deb https://repo.scala-sbt.org/scalasbt/debian all main" | sudo tee /etc/apt/sources.list.d/sbt.list
+    curl -sL "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x2EE0EA64E40A89B84B2DF73499E82A75642AC823" | sudo apt-key add
+    sudo apt-get update && sudo apt-get install sbt
+    ```
+  </Tab>
+  <Tab title="Manual">
+    ```bash
+    # Download SBT 0.13.18 directly
+    curl -L https://github.com/sbt/sbt/releases/download/v0.13.18/sbt-0.13.18.tgz | tar xz
+    sudo mv sbt /usr/local/sbt
+    export PATH=$PATH:/usr/local/sbt/bin
+    ```
+  </Tab>
+</Tabs>
+
+<Info>
+  SBT 0.13.18 is specified in `project/build.properties`. Later major versions of SBT (1.x) have breaking changes and are not compatible with this project.
+</Info>
+
+## MongoDB
+
+Lidraughts uses ReactiveMongo 0.12.2 (declared in `project/Dependencies.scala`) as its async MongoDB driver. MongoDB 3.x is the baseline, though 4.x and 5.x work with the default connection URI.
+
+<Tabs>
+  <Tab title="Debian / Ubuntu">
+    ```bash
+    # MongoDB 4.4 (LTS)
+    wget -qO - https://www.mongodb.org/static/pgp/server-4.4.asc | sudo apt-key add -
+    echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/4.4 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-4.4.list
+    sudo apt-get update && sudo apt-get install -y mongodb-org
+    sudo systemctl enable --now mongod
+    ```
+  </Tab>
+  <Tab title="Fedora / RHEL">
+    ```bash
+    sudo dnf install mongodb-org
+    sudo systemctl enable --now mongod
+    ```
+  </Tab>
+</Tabs>
+
+The default connection URI used by Lidraughts is:
+
+```
+mongodb://127.0.0.1:27017/lidraughts
+```
+
+No authentication is required for a local development setup. For production, restrict MongoDB to `127.0.0.1` or configure authentication and update the URI in your application config.
+
+## Node.js and Yarn
+
+The UI build system requires **Node.js ≥ 10** (declared in `package.json`) and **Yarn 1.x** for workspace support.
+
+<Tabs>
+  <Tab title="nvm (recommended)">
+    ```bash
+    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+    nvm install --lts
+    npm install -g yarn
+    ```
+  </Tab>
+  <Tab title="Debian / Ubuntu">
+    ```bash
+    curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+    sudo apt-get install -y nodejs
+    npm install -g yarn
+    ```
+  </Tab>
+</Tabs>
+
+## Scan 3.1 engine
+
+Computer opposition and position analysis for all 10×10 draughts variants is powered by **Scan 3.1**, an engine written by Fabien Letouzey. The engine is invoked through the Draughtsnet worker process, not embedded directly in the server.
+
+See the [Draughtsnet](/self-hosting/draughtsnet) page for setup instructions.
+
+## Memory recommendations
+
+The `bin/dev` startup script allocates the following JVM heap by default:
+
+```
+JAVA_OPTS="-Xms2048M -Xmx2560M -XX:ReservedCodeCacheSize=128m ..."
+```
+
+You need at least **4 GB of total system RAM** for a comfortable development setup. For a production server handling real traffic, **8 GB or more** is recommended.

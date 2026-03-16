@@ -1,0 +1,101 @@
+---
+title: "Streamers"
+description: "Lidraughts streamers — watch live draughts on stream"
+---
+
+Lidraughts maintains a directory of approved streamers who broadcast draughts content. When a listed streamer goes live, they appear at the top of the streamers page so other users can watch.
+
+## Streamers listing
+
+Visit [lidraughts.org/streamer](https://lidraughts.org/streamer) to see all streamers. The page is split into two sections:
+
+<CardGroup cols={2}>
+  <Card title="Live now" icon="circle-dot">
+    Streamers who are currently broadcasting appear at the top with their stream status.
+  </Card>
+  <Card title="All streamers" icon="list">
+    Every approved streamer is listed below, even when offline, with their profile and channel information.
+  </Card>
+</CardGroup>
+
+## Streamer profile page
+
+Each streamer has a profile page at `/streamer/<username>` showing:
+
+- Current live status and stream details
+- Recent activity on Lidraughts (last 10 activity items)
+- A **Follow** button to follow the player on Lidraughts
+
+A streamer's profile page is only accessible if the streamer is listed (approved), or if you are viewing your own page, or if you have admin access.
+
+## Featured streamers API
+
+The featured streamers endpoint at `/streamer/featured` returns a JSON list of currently live streams that have been automatically featured. Each entry includes:
+
+```json
+{
+  "url": "https://lidraughts.org/streamer/username",
+  "status": "...",
+  "user": {
+    "id": "username",
+    "name": "DisplayName",
+    "title": "IM"
+  }
+}
+```
+
+The `/api/streamer/live` endpoint returns a list of currently live streamers as lightweight user objects, including a `playing` flag if they are in an active game.
+
+## Becoming a streamer
+
+Anyone can apply for a streamer profile. The process has three steps: create your streamer record, fill in your profile, and request approval.
+
+<Steps>
+  <Step title="Create your streamer record">
+    Log in and go to [lidraughts.org/streamer/edit](https://lidraughts.org/streamer/edit). If you have never registered as a streamer before, click **Become a streamer**. This creates your streamer record and takes you to the edit form.
+
+    <Note>
+      Users who are shadowbanned or whose accounts have been flagged as "lame" cannot register as streamers.
+    </Note>
+  </Step>
+  <Step title="Fill in your streamer profile">
+    On the edit page, complete your profile:
+
+    | Field | Description |
+    |---|---|
+    | **Display name** | The name shown on the streamers listing. |
+    | **Twitch username** | Your Twitch channel name (if streaming on Twitch). |
+    | **YouTube channel ID** | Your YouTube channel ID (if streaming on YouTube). |
+    | **Headline** | A short description of your stream. |
+    | **Description** | Longer description of your content and schedule. |
+
+  </Step>
+  <Step title="Upload a profile picture">
+    Go to [lidraughts.org/streamer/picture](https://lidraughts.org/streamer/picture) to upload a photo or avatar for your streamer listing. Click **Upload** and select an image file from your device.
+
+    To remove your current picture, click **Delete picture** on the same page.
+  </Step>
+  <Step title="Request approval">
+    Once your profile is ready, click **Request approval** on the edit page. This sends your application to the Lidraughts streamer moderators.
+  </Step>
+</Steps>
+
+## Approval process
+
+After you submit an approval request, a Lidraughts moderator with the `Streamers` permission reviews your profile. They can approve (list) or reject your application.
+
+<Info>
+  Moderators can also toggle whether your stream is **featured**, which gives it extra prominence on the listing page and in the featured API endpoint.
+</Info>
+
+Approval status changes are logged in the moderation log. You can check the current state of your profile at any time on [lidraughts.org/streamer/edit](https://lidraughts.org/streamer/edit).
+
+<Warning>
+  Lidraughts may remove a streamer's listing if their content violates the terms of service or community guidelines.
+</Warning>
+
+## Editing your streamer profile
+
+You can update your streamer profile at any time at [lidraughts.org/streamer/edit](https://lidraughts.org/streamer/edit). Changes to Twitch or YouTube handles, your headline, and description take effect immediately on save. You do not need to re-apply for approval after editing, unless the platform requires re-review for specific fields.
+
+Moderators can also edit any streamer's profile by appending `?u=<username>` to the edit URL.

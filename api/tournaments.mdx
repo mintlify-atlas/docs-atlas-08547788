@@ -1,0 +1,319 @@
+---
+title: "Tournaments"
+description: "API endpoints for Arena tournaments"
+---
+
+# Tournaments
+
+Lidraughts supports **Arena** (clock-based) and **Team Battle** tournaments. See [Swiss tournaments](/api/swiss) for Swiss-system events.
+
+---
+
+## Get current tournaments
+
+```
+GET /api/tournament
+```
+
+Returns all currently visible tournaments (created, started, and recently finished).
+
+```bash
+curl https://lidraughts.org/api/tournament
+```
+
+```json
+{
+  "created": [...],
+  "started": [...],
+  "finished": [...]
+}
+```
+
+---
+
+## Get tournament details
+
+```
+GET /api/tournament/{id}
+```
+
+Returns full details of a tournament, including standings.
+
+<ParamField path="id" type="string" required>
+  The 8-character tournament ID.
+</ParamField>
+
+<ParamField query="page" type="integer">
+  Standings page number (1-indexed, max 200).
+</ParamField>
+
+```bash
+curl https://lidraughts.org/api/tournament/abcd1234
+```
+
+---
+
+## Export tournament games
+
+```
+GET /api/tournament/{id}/games
+```
+
+Streams all games of a tournament as PDN or NDJSON.
+
+<ParamField path="id" type="string" required>
+  The tournament ID.
+</ParamField>
+
+<ParamField query="moves" type="boolean">
+  Include moves. Default: `true`.
+</ParamField>
+
+<ParamField query="tags" type="boolean">
+  Include PDN tags. Default: `true`.
+</ParamField>
+
+<ParamField query="clocks" type="boolean">
+  Include clock comments.
+</ParamField>
+
+<ParamField query="evals" type="boolean">
+  Include analysis evaluations.
+</ParamField>
+
+<ParamField query="algebraic" type="boolean">
+  Use algebraic move notation.
+</ParamField>
+
+```bash
+curl --no-buffer \
+  https://lidraughts.org/api/tournament/abcd1234/games > tournament.pdn
+```
+
+---
+
+## Get tournament results
+
+```
+GET /api/tournament/{id}/results
+```
+
+Streams player results (rank, score, performance) as NDJSON.
+
+<ParamField path="id" type="string" required>
+  The tournament ID.
+</ParamField>
+
+<ParamField query="nb" type="integer">
+  Maximum number of results to return.
+</ParamField>
+
+```bash
+curl --no-buffer \
+  https://lidraughts.org/api/tournament/abcd1234/results
+```
+
+```json
+{"rank":1,"score":24,"rating":1950,"username":"draughtsmaster","performance":2010}
+{"rank":2,"score":22,"rating":1870,"username":"player2","performance":1890}
+```
+
+---
+
+## Get team battle standings
+
+```
+GET /api/tournament/{id}/teams
+```
+
+Returns the team standings for a team battle tournament.
+
+<ParamField path="id" type="string" required>
+  The tournament ID.
+</ParamField>
+
+```bash
+curl https://lidraughts.org/api/tournament/abcd1234/teams
+```
+
+```json
+{
+  "id": "abcd1234",
+  "teams": [
+    {"id": "my-team", "score": 45, "players": [...]}
+  ]
+}
+```
+
+---
+
+## Create a tournament
+
+```
+POST /api/tournament
+```
+
+Creates an Arena tournament. Requires the `tournament:write` OAuth scope.
+
+<Warning>
+  You must be authenticated with a `tournament:write` token. Bot accounts and sanctioned accounts cannot create tournaments.
+</Warning>
+
+### Body parameters
+
+<ParamField body="name" type="string">
+  Tournament name. Leave blank for a default auto-generated name.
+</ParamField>
+
+<ParamField body="clockTime" type="number" required>
+  Clock initial time in minutes. E.g. `5` for 5+0.
+</ParamField>
+
+<ParamField body="clockIncrement" type="integer" required>
+  Clock increment in seconds. E.g. `3` for 5+3.
+</ParamField>
+
+<ParamField body="minutes" type="integer" required>
+  Duration of the tournament in minutes.
+</ParamField>
+
+<ParamField body="startDate" type="integer">
+  Timestamp (ms) when the tournament starts. Leave blank to start immediately.
+</ParamField>
+
+<ParamField body="variant" type="string">
+  Variant key. One of: `standard`, `frisian`, `frysk`, `antidraughts`, `breakthrough`, `russian`, `brazilian`, `pool`, `english`. Default: `standard`.
+</ParamField>
+
+<ParamField body="rated" type="boolean">
+  Whether games are rated. Default: `true`.
+</ParamField>
+
+<ParamField body="position" type="string">
+  Custom starting FEN position.
+</ParamField>
+
+<ParamField body="berserkable" type="boolean">
+  Whether players can berserk (halve their clock for bonus points). Default: `true`.
+</ParamField>
+
+<ParamField body="teamBattleByTeam" type="string">
+  Team ID to create a team battle tournament. You must be the team leader.
+</ParamField>
+
+<ParamField body="password" type="string">
+  Password to make the tournament private.
+</ParamField>
+
+<ParamField body="conditions.minRating.rating" type="integer">
+  Minimum rating to join.
+</ParamField>
+
+<ParamField body="conditions.maxRating.rating" type="integer">
+  Maximum rating to join.
+</ParamField>
+
+<ParamField body="conditions.nbRatedGame.nb" type="integer">
+  Minimum number of rated games to join.
+</ParamField>
+
+```bash
+curl -X POST \
+  -H "Authorization: Bearer lip_yourtoken" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d 'clockTime=5&clockIncrement=3&minutes=60&variant=standard&rated=true' \
+  https://lidraughts.org/api/tournament
+```
+
+---
+
+## Update a tournament
+
+```
+POST /api/tournament/{id}
+```
+
+Updates a tournament you created. Accepts the same fields as tournament creation. Requires `tournament:write` scope.
+
+<ParamField path="id" type="string" required>
+  The tournament ID.
+</ParamField>
+
+```bash
+curl -X POST \
+  -H "Authorization: Bearer lip_yourtoken" \
+  -d 'name=Updated+Name' \
+  https://lidraughts.org/api/tournament/abcd1234
+```
+
+---
+
+## Terminate a tournament early
+
+```
+POST /api/tournament/{id}/terminate
+```
+
+Ends the tournament immediately. Requires `tournament:write` scope and must be the creator.
+
+<ParamField path="id" type="string" required>
+  The tournament ID.
+</ParamField>
+
+```bash
+curl -X POST \
+  -H "Authorization: Bearer lip_yourtoken" \
+  https://lidraughts.org/api/tournament/abcd1234/terminate
+```
+
+---
+
+## Update team battle teams
+
+```
+POST /api/tournament/team-battle/{id}
+```
+
+Updates the teams and number of leaders for a team battle tournament. Requires `tournament:write` scope.
+
+<ParamField path="id" type="string" required>
+  The team battle tournament ID.
+</ParamField>
+
+<ParamField body="teams" type="string" required>
+  Newline-separated list of team IDs.
+</ParamField>
+
+<ParamField body="nbLeaders" type="integer" required>
+  Number of top players per team that contribute to the team score.
+</ParamField>
+
+```bash
+curl -X POST \
+  -H "Authorization: Bearer lip_yourtoken" \
+  -d 'teams=team-alpha%0Ateam-beta&nbLeaders=5' \
+  https://lidraughts.org/api/tournament/team-battle/abcd1234
+```
+
+---
+
+## Get tournaments created by a user
+
+```
+GET /api/user/{name}/tournament/created
+```
+
+Streams all tournaments created by a user as NDJSON.
+
+<ParamField path="name" type="string" required>
+  The username.
+</ParamField>
+
+<ParamField query="nb" type="integer">
+  Maximum number of tournaments to return.
+</ParamField>
+
+```bash
+curl --no-buffer \
+  https://lidraughts.org/api/user/draughtsmaster/tournament/created
+```

@@ -1,0 +1,206 @@
+---
+title: "Draughtsnet"
+description: "Set up the Draughtsnet computer analysis network"
+---
+
+Draughtsnet is Lidraughts's distributed analysis infrastructure. Worker processes (clients) connect to your Lidraughts server over HTTP, receive game positions to evaluate, run a draughts engine, and return results. This allows the server to offload computationally expensive engine work to separate machines.
+
+## How it works
+
+```
+  Browser
+    │  requests analysis
+    ▼
+  Lidraughts server ──── queues work in MongoDB ────► draughtsnet_analysis
+    ▲                                                         │
+    │                                              Draughtsnet worker
+    │                                              (polls /draughtsnet/acquire)
+    │                                                         │
+    └─────────────────── receives results ◄──────────────────┘
+                         (POST /draughtsnet/analysis/:id)
+```
+
+Workers poll the `/draughtsnet/acquire` endpoint, receive a job (move, analysis, or commentary), compute it with the Scan engine, and submit the result. The server aggregates results and stores them for display.
+
+## Client skills
+
+Each connected worker declares a **skill** that determines what types of work it can accept:
+
+| Skill | Work accepted |
+|---|---|
+| `move` | Computer opponent move computation |
+| `analysis` | Full game analysis (multiple positions) |
+| `commentary` | Live commentary evaluation |
+| `all` | All of the above |
+
+Skills are stored per-client in the `draughtsnet_client` MongoDB collection.
+
+## The Scan 3.1 engine
+
+All 10×10 draughts analysis is powered by **Scan 3.1**, written by Fabien Letouzey. Scan supports:
+
+- Standard (International) draughts
+- Frisian draughts
+- Antidraughts
+- Frysk!
+- Breakthrough
+
+The Draughtsnet worker must have the `scan` binary available and pass its name and version back to the server in each request.
+
+Download Scan from the upstream repository: [github.com/rhalbersma/scan](https://github.com/rhalbersma/scan)
+
+Build it from source:
+
+```bash
+git clone https://github.com/rhalbersma/scan.git
+cd scan
+make
+# Binary is built at ./scan
+```
+
+## Draughtsnet client setup
+
+The Draughtsnet client is a separate process that connects to your Lidraughts instance. It is not bundled with the server source; you need to set it up independently.
+
+The client communicates with the server via the following endpoints:
+
+| Endpoint | Method | Description |
+|---|---|---|
+| `/draughtsnet/acquire` | `POST` | Request the next available job |
+| `/draughtsnet/move/:id` | `POST` | Submit a computed move |
+| `/draughtsnet/analysis/:id` | `POST` | Submit an analysis result |
+| `/draughtsnet/commentary/:id` | `POST` | Submit commentary |
+| `/draughtsnet/abort/:id` | `POST` | Abort a job |
+| `/draughtsnet/key/:key` | `GET` | Check if an API key exists |
+| `/draughtsnet/status` | `GET` | Server-side queue status |
+
+All `POST` requests to the worker endpoints require a JSON body with this structure:
+
+```json
+{
+  "draughtsnet": {
+    "version": "1.0.0",
+    "apikey": "your-api-key"
+  },
+  "scan": {
+    "name": "scan 3.1"
+  }
+}
+```
+
+## Creating a client API key
+
+Lidraughts manages client keys via a command-line interface built into the running application. Use the SBT console or the application CLI:
+
+```bash
+# Inside the SBT dev session
+lidraughts/draughtsnet client create <username> <skill>
+```
+
+Where `<skill>` is one of `move`, `analysis`, `commentary`, or `all`.
+
+Example:
+
+```bash
+lidraughts/draughtsnet client create myuser all
+# Output: Created key: AbCdEfGh for: myuser
+```
+
+The generated key is an 8-character alphanumeric string. Pass it to your Draughtsnet client as the `apikey` value.
+
+Other key management commands:
+
+```bash
+lidraughts/draughtsnet client delete <key>
+lidraughts/draughtsnet client enable <key>
+lidraughts/draughtsnet client disable <key>
+lidraughts/draughtsnet client skill <key> <skill>
+```
+
+## Offline mode
+
+The `draughtsnet.offline_mode` configuration option (default: `true`) disables API key authentication entirely. In offline mode, any client that connects can submit results without a key:
+
+```hocon
+draughtsnet {
+  offline_mode = true   # development: no key required
+}
+```
+
+<Warning>
+  Leave `offline_mode = true` only in isolated development environments. In production, set it to `false` and issue keys only to trusted workers. An unauthenticated worker could submit incorrect analysis results.
+</Warning>
+
+## Server configuration
+
+These settings in `conf/base.conf` (under the `draughtsnet` key) control analysis quality and limits:
+
+```hocon
+draughtsnet {
+  offline_mode = true
+  actor.name = draughtsnet
+  analysis.nodes = 5000000       # nodes per move for game analysis
+  commentary.nodes = 6000000     # nodes per move for commentary
+  move.plies = 300               # max plies for AI move computation
+  client_min_version = "1.0.0"   # reject older clients
+  collection {
+    analysis = draughtsnet_analysis
+    client   = draughtsnet_client
+  }
+}
+```
+
+Increase `analysis.nodes` for stronger, slower analysis. The worker's actual node count is validated server-side: if the median nodes per move across an analysis is below 90% of the target, the analysis is rejected as weak.
+
+## Running the worker as a service
+
+For a persistent worker, create a systemd unit. Adjust the paths and key to match your setup:
+
+```ini /etc/systemd/system/draughtsnet.service
+[Unit]
+Description=Draughtsnet worker
+After=network.target
+
+[Service]
+Type=simple
+User=draughtsnet
+WorkingDirectory=/opt/draughtsnet
+ExecStart=/opt/draughtsnet/draughtsnet-client \
+  --endpoint http://127.0.0.1:9663 \
+  --apikey AbCdEfGh \
+  --scan /usr/local/bin/scan
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Enable and start:
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable draughtsnet
+sudo systemctl start draughtsnet
+sudo journalctl -u draughtsnet -f
+```
+
+## Verifying the connection
+
+Check that the server sees active workers:
+
+```bash
+curl http://localhost:9663/draughtsnet/status
+```
+
+Check that a specific key is registered:
+
+```bash
+curl http://localhost:9663/draughtsnet/key/AbCdEfGh
+# HTTP 200: key exists
+# HTTP 404: key not found
+```
+
+<Tip>
+  For development, `offline_mode = true` plus the default `draughtsnet.client_min_version = "1.0.0"` allows you to write a simple script that polls the acquire endpoint and feeds positions to a locally built Scan binary — no key management needed.
+</Tip>

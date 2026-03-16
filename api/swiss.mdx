@@ -1,0 +1,167 @@
+---
+title: "Swiss tournaments"
+description: "API endpoints for Swiss-system tournaments"
+---
+
+# Swiss tournaments
+
+Swiss tournaments pair players using the Swiss pairing system: players with similar scores are paired each round, and no player is eliminated. This differs from Arena tournaments, where players play continuously throughout the event window.
+
+| | Swiss | Arena |
+|---|---|---|
+| Rounds | Fixed number of rounds | Continuous play |
+| Pairing | Swiss algorithm | Any available opponent |
+| Team | Must be a team tournament | Open or team battle |
+| Result | Sum of match points | Points from games |
+
+<Note>
+  Swiss tournaments on Lidraughts are linked to a team. You must be a team leader to create one.
+</Note>
+
+---
+
+## Create a Swiss tournament
+
+```
+POST /api/swiss/new/{teamId}
+```
+
+Creates a new Swiss tournament for a team. You must be authenticated and be the team leader. Requires a valid OAuth token. The account must have the `Beta` feature enabled.
+
+<ParamField path="teamId" type="string" required>
+  The ID of the team to attach the tournament to.
+</ParamField>
+
+### Body parameters
+
+<ParamField body="name" type="string" required>
+  Tournament name.
+</ParamField>
+
+<ParamField body="clock.limit" type="integer" required>
+  Clock initial time in seconds (e.g. `180` for 3 minutes).
+</ParamField>
+
+<ParamField body="clock.increment" type="integer" required>
+  Clock increment in seconds.
+</ParamField>
+
+<ParamField body="nbRounds" type="integer" required>
+  Number of rounds to play.
+</ParamField>
+
+<ParamField body="startsAt" type="integer">
+  Timestamp (ms) when the first round starts. Defaults to 10 minutes from now.
+</ParamField>
+
+<ParamField body="roundInterval" type="integer">
+  Time between rounds in seconds. Use `99999999` for manual scheduling.
+</ParamField>
+
+<ParamField body="variant" type="string">
+  Variant key. One of: `standard`, `frisian`, `frysk`, `antidraughts`, `breakthrough`, `russian`, `brazilian`, `pool`, `english`. Default: `standard`.
+</ParamField>
+
+<ParamField body="rated" type="boolean">
+  Whether games are rated. Default: `true`.
+</ParamField>
+
+<ParamField body="description" type="string">
+  Tournament description shown on the tournament page.
+</ParamField>
+
+<ParamField body="chatFor" type="integer">
+  Who can use the chat: `0` = no chat, `10` = team members, `20` = tournament participants, `30` = everyone.
+</ParamField>
+
+```bash
+curl -X POST \
+  -H "Authorization: Bearer lip_yourtoken" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d 'name=My+Swiss&clock.limit=180&clock.increment=2&nbRounds=7&variant=standard' \
+  https://lidraughts.org/api/swiss/new/my-team-id
+```
+
+```json
+{
+  "id": "abcd1234",
+  "name": "My Swiss",
+  "createdBy": "myusername",
+  "startsAt": "2024-01-01T12:00:00Z",
+  "nbRounds": 7,
+  "round": 0,
+  "nbPlayers": 0,
+  "variant": { "key": "standard", "name": "Standard" },
+  "clock": { "limit": 180, "increment": 2 },
+  "rated": true,
+  "status": "created"
+}
+```
+
+---
+
+## Export Swiss games
+
+```
+GET /api/swiss/{id}/games
+```
+
+Exports all games from a Swiss tournament as PDN or NDJSON.
+
+<ParamField path="id" type="string" required>
+  The 8-character Swiss tournament ID.
+</ParamField>
+
+<ParamField query="moves" type="boolean">
+  Include moves. Default: `true`.
+</ParamField>
+
+<ParamField query="tags" type="boolean">
+  Include PDN tags. Default: `true`.
+</ParamField>
+
+<ParamField query="clocks" type="boolean">
+  Include clock comments.
+</ParamField>
+
+<ParamField query="evals" type="boolean">
+  Include analysis evaluations.
+</ParamField>
+
+<ParamField query="algebraic" type="boolean">
+  Use algebraic move notation.
+</ParamField>
+
+<Tabs>
+  <Tab title="PDN">
+    ```bash
+    curl --no-buffer \
+      https://lidraughts.org/api/swiss/abcd1234/games > swiss.pdn
+    ```
+  </Tab>
+  <Tab title="NDJSON">
+    ```bash
+    curl --no-buffer \
+      -H "Accept: application/x-ndjson" \
+      https://lidraughts.org/api/swiss/abcd1234/games > swiss.ndjson
+    ```
+  </Tab>
+</Tabs>
+
+---
+
+## Export TRF file
+
+```
+GET /swiss/{id}.trf
+```
+
+Exports a Swiss tournament in **TRF** (Tournament Report File) format, the standard format used by FIDE-approved Swiss pairing programs.
+
+<ParamField path="id" type="string" required>
+  The Swiss tournament ID.
+</ParamField>
+
+```bash
+curl https://lidraughts.org/swiss/abcd1234.trf > tournament.trf
+```

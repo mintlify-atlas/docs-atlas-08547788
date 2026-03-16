@@ -1,0 +1,284 @@
+---
+title: "Configuration"
+description: "Configuring your Lidraughts instance"
+---
+
+Lidraughts configuration is based on [Typesafe Config](https://github.com/lightbend/config) (HOCON format). The file `conf/base.conf` defines all defaults. Your `conf/application.conf` overrides only what you need to change.
+
+The minimal override file looks like this:
+
+```hocon conf/application.conf
+include "base"
+
+http {
+  port = 9663
+}
+net {
+  domain = "yourdomain.org"
+}
+```
+
+Every setting shown below comes from `conf/base.conf`. Add any you want to change to your own `application.conf`.
+
+## Network (`net.*`)
+
+The `net` block defines how Lidraughts understands its own public address. These values are embedded in links, cookies, and WebSocket handshakes.
+
+| Key | Default | Description |
+|---|---|---|
+| `net.domain` | `lidraughts.org` | Public hostname of your instance |
+| `net.protocol` | `http://` | `http://` or `https://` — set to `https://` when TLS is terminated |
+| `net.base_url` | `${net.protocol}${net.domain}` | Full base URL, derived automatically |
+| `net.ip` | `127.0.0.1` | IP address the Play server binds to |
+| `net.socket.domain` | `socket.${net.domain}` | Domain for WebSocket connections |
+| `net.asset.domain` | `${net.domain}` | Domain used for serving static assets |
+| `net.email` | `contact@lidraughts.org` | Contact email shown in the UI |
+| `net.crawlable` | `false` | Set to `true` to allow search engine indexing |
+| `net.ratelimit` | `true` | Enable global rate limiting |
+
+```hocon
+net {
+  domain = "draughts.example.com"
+  protocol = "https://"
+  ip = "127.0.0.1"
+}
+```
+
+## HTTP and Play server (`http.*`, `play.*`)
+
+### Port
+
+```hocon
+http {
+  port = 9663
+}
+```
+
+This is the port that Play's embedded Netty server listens on. Nginx (or another reverse proxy) should forward traffic from ports 80/443 to this port.
+
+### Session
+
+| Key | Default | Description |
+|---|---|---|
+| `play.http.session.cookieName` | `lidraughts2` | Name of the session cookie |
+| `play.http.session.maxAge` | `365 days` | Session lifetime |
+| `play.http.parser.maxMemoryBuffer` | `1MB` | Maximum size of in-memory request body |
+
+### Netty limits
+
+| Key | Default | Description |
+|---|---|---|
+| `play.server.netty.maxInitialLineLength` | `2048` | Maximum URL length the server accepts |
+| `play.server.netty.maxHeaderSize` | `4096` | Maximum total HTTP header size |
+
+### Crypto secret
+
+<Warning>
+  The default `play.crypto.secret` in `conf/base.conf` is:
+
+  ```
+  f9f5qcA[2eH7>v^5Mwu54Rh0mmU94A8ifl[:cT?mfp[^OTd1_oZMFU`aJAQKbkK8
+  ```
+
+  This value is **publicly known** — anyone who reads the source code knows it. Override it with a long, randomly generated secret in your `application.conf` before running any public-facing instance.
+</Warning>
+
+```hocon
+play {
+  crypto {
+    secret = "your-unique-randomly-generated-secret-here"
+  }
+}
+```
+
+Generate a suitable secret:
+
+```bash
+openssl rand -base64 64
+```
+
+## MongoDB (`mongodb.*`)
+
+| Key | Default | Description |
+|---|---|---|
+| `mongodb.uri` | `mongodb://127.0.0.1:27017/lidraughts` | Primary connection URI |
+| `mongodb.image.collection` | `image` | Collection for uploaded images |
+
+The `puzzle` and `insight` modules each have their own `mongodb.uri`:
+
+```hocon
+mongodb {
+  uri = "mongodb://127.0.0.1:27017/lidraughts"
+}
+puzzle {
+  mongodb {
+    uri = "mongodb://127.0.0.1:27017/lidraughts"
+  }
+}
+insight {
+  mongodb {
+    uri = "mongodb://127.0.0.1:27017/lidraughts-insight"
+  }
+}
+```
+
+All three can point to the same MongoDB instance. Separate databases (`lidraughts` vs `lidraughts-insight`) are used by default.
+
+## Application scheduler (`app.*`)
+
+| Key | Default | Description |
+|---|---|---|
+| `app.scheduler.disabled` | `false` | Disable all background scheduled tasks |
+| `app.scheduler.debug` | `false` | Log scheduler activity verbosely |
+| `app.stage` | `false` | Mark the instance as a staging environment |
+| `app.forcedev` | `false` | Force development mode behaviour |
+| `app.web_path` | `public` | Relative path to compiled static assets |
+
+## API token (`api.*`)
+
+```hocon
+api {
+  token = secret
+}
+```
+
+The `api.token` is used internally by some modules to authenticate requests between components. Change this from the default `secret` value.
+
+## OAuth (`oauth.*`)
+
+Lidraughts includes a built-in OAuth 2.0 authorization server. The OAuth module stores tokens and client apps in MongoDB:
+
+| Key | Default | Description |
+|---|---|---|
+| `oauth.mongodb.uri` | `${mongodb.uri}` | MongoDB URI (inherits the primary URI) |
+| `oauth.collection.access_token` | `oauth_access_token` | Collection for OAuth tokens |
+| `oauth.collection.app` | `oauth_client` | Collection for registered OAuth apps |
+| `oauth.base_url` | `${net.protocol}oauth.${net.domain}/` | OAuth endpoint base URL |
+
+## Email / Mailgun (`mailgun.*`)
+
+Outgoing email (password resets, email confirmation, etc.) is sent via Mailgun:
+
+| Key | Default | Description |
+|---|---|---|
+| `mailgun.api.url` | `""` | Mailgun API URL (e.g. `https://api.mailgun.net/v3/your-domain/messages`) |
+| `mailgun.api.key` | `""` | Mailgun API key |
+| `mailgun.sender` | `lidraughts.org <noreply@lidraughts.org>` | From address |
+| `mailgun.reply_to` | `lidraughts.org <noreply@lidraughts.org>` | Reply-To address |
+
+```hocon
+mailgun {
+  api {
+    url = "https://api.mailgun.net/v3/mail.example.com/messages"
+    key = "key-xxxxxxxxxxxxxxxxxxxx"
+  }
+  sender = "Lidraughts <noreply@example.com>"
+  reply_to = "Lidraughts <noreply@example.com>"
+}
+```
+
+<Info>
+  Email is optional for a local development instance. Leave `mailgun.api.key` empty and email features will silently fail without crashing the server.
+</Info>
+
+## Push notifications (`push.*`)
+
+Lidraughts supports Web Push (VAPID), OneSignal, and Firebase Cloud Messaging:
+
+| Key | Default | Description |
+|---|---|---|
+| `push.web.vapid_public_key` | `""` | VAPID public key for Web Push |
+| `push.web.url` | `""` | Web Push endpoint URL |
+| `push.onesignal.app_id` | `""` | OneSignal application ID |
+| `push.onesignal.key` | `""` | OneSignal REST API key |
+| `push.firebase.url` | `https://fcm.googleapis.com/v1/projects/project-id/messages:send` | FCM endpoint |
+| `push.firebase.json` | `""` | FCM service account JSON credentials |
+
+Leave all push settings empty to disable push notifications.
+
+## Draughtsnet (`draughtsnet.*`)
+
+The `draughtsnet` block controls the computer analysis worker network:
+
+| Key | Default | Description |
+|---|---|---|
+| `draughtsnet.offline_mode` | `true` | Allow any client to provide analysis (no key check) |
+| `draughtsnet.analysis.nodes` | `5000000` | Node count budget per analysis move |
+| `draughtsnet.commentary.nodes` | `6000000` | Node count budget for commentary |
+| `draughtsnet.move.plies` | `300` | Maximum plies for AI move computation |
+| `draughtsnet.client_min_version` | `1.0.0` | Minimum allowed client version |
+| `draughtsnet.collection.analysis` | `draughtsnet_analysis` | MongoDB collection for analysis work |
+| `draughtsnet.collection.client` | `draughtsnet_client` | MongoDB collection for registered clients |
+
+```hocon
+draughtsnet {
+  offline_mode = false       # require API key authentication
+  analysis.nodes = 5000000
+  commentary.nodes = 6000000
+  move.plies = 300
+  client_min_version = "1.0.0"
+}
+```
+
+<Warning>
+  `draughtsnet.offline_mode = true` means **any** connecting client can submit moves and analysis results without authentication. Set this to `false` in production and issue API keys to trusted workers.
+</Warning>
+
+## Rate limiting (`net.ratelimit`)
+
+```hocon
+net {
+  ratelimit = true
+}
+```
+
+Set to `false` to disable all rate limiting, which is useful during local development.
+
+The security module also has flood protection:
+
+```hocon
+security {
+  flood.duration = 60 seconds
+}
+```
+
+## Security secrets
+
+Several secrets in the `security` block must be changed for any real deployment:
+
+| Key | Default | Description |
+|---|---|---|
+| `security.password_reset.secret` | `???` | Signs password reset tokens |
+| `security.email_confirm.secret` | `???` | Signs email confirmation tokens |
+| `security.email_change.secret` | `???` | Signs email change tokens |
+| `security.login_token.secret` | `???` | Signs login tokens |
+
+<Warning>
+  The placeholder value `???` will cause a config parsing error at startup. Generate a random string for each secret:
+
+  ```bash
+  openssl rand -base64 32
+  ```
+</Warning>
+
+## Search (`search.*`)
+
+Full-text search (forum posts, games, studies, teams) is disabled by default and requires a running Elasticsearch-compatible endpoint:
+
+```hocon
+search {
+  enabled = false
+  writeable = false
+  endpoint = "http://localhost:9673"
+}
+```
+
+## Swiss pairing (`swiss.bbpairing`)
+
+```hocon
+swiss {
+  bbpairing = "/path/to/bbpPairings.exe"
+}
+```
+
+Swiss tournaments use the external `bbpPairings` binary for pairing computation. Set this to the absolute path of the binary on your system.

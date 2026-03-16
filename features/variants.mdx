@@ -1,0 +1,191 @@
+---
+title: "Draughts variants"
+description: "All supported draughts variants on Lidraughts"
+---
+
+Lidraughts supports seven draughts variants across both the 10×10 and 8×8 board sizes. Standard (international) draughts is the default. All variants are available for live games, computer play, puzzles, tournaments, simuls, and studies.
+
+## Variant summary
+
+| Variant | Board | Goal | Key distinction |
+|---|---|---|---|
+| Standard | 10×10 | Capture all opponent pieces | FMJD international rules |
+| Frisian | 10×10 | Capture all opponent pieces | Pieces capture in all 8 directions |
+| Antidraughts | 10×10 | Lose all your pieces | Reversed win condition |
+| Frysk! | 10×10 | Capture all opponent pieces | Starts with 5 pieces per side |
+| Breakthrough | 10×10 | First to promote a piece wins | No kings during the game |
+| Russian | 8×8 | Capture all opponent pieces | Free capture choice; mid-capture promotion |
+| Brazilian | 8×8 | Capture all opponent pieces | FMJD rules on an 8×8 board |
+
+## Variant details
+
+<AccordionGroup>
+  <Accordion title="Standard — 10×10 International draughts">
+    Standard is the default variant on Lidraughts and follows the official rules of the [FMJD](https://www.fmjd.org) (Fédération Mondiale du Jeu de Dames).
+
+    **Board**: 10×10, 20 pieces per side arranged on four ranks.
+
+    **Movement**: Men move diagonally forward. Kings move any number of squares diagonally in any direction (long-range king).
+
+    **Captures**: Captures are mandatory. If multiple captures are possible, the longest capture sequence must be taken. Captured pieces are removed after the full sequence is complete. Captures are in all four diagonal directions for both men and kings.
+
+    **Promotion**: A man reaching the opponent's back rank is promoted to a king immediately, unless it can continue capturing — in that case promotion is deferred until the full sequence ends.
+
+    **Drawing rules** (as implemented in Lidraughts):
+    - Threefold repetition of the same position with the same player to move.
+    - 25 consecutive king moves by both sides without a capture.
+    - Specific endgame piece-count thresholds (16-move, 5-move rules).
+
+    ```text
+    Variant key: standard
+    Board:       10×10 (D100)
+    ```
+  </Accordion>
+
+  <Accordion title="Frisian draughts — 10×10 with 8-directional captures">
+    Frisian draughts is a traditional variant from the Frisian region. It is the most popular variant on Lidraughts after Standard and has its own dedicated tournaments and Shield.
+
+    **Board**: 10×10, same starting position as Standard.
+
+    **Movement**: Identical to Standard — men move diagonally forward, kings move long-range diagonally.
+
+    **Captures**: Both men and kings can capture in all **8 directions** — the four diagonal directions plus horizontally and vertically. This is the defining rule of Frisian draughts.
+
+    **Capture priority**: Captures are evaluated by value. A king is worth more than a man (internally: king = 199, man = 100). The sequence with the highest total value must be taken. When values are equal, a king must capture before a man.
+
+    **Drawing rules**:
+    - When one side has two kings and the other has one: draw after both players make 7 moves.
+    - When both sides have one king each: draw after both players make 2 additional moves.
+
+    <Note>
+    The 8-directional capture rule makes Frisian games dramatically more tactical than Standard. Pieces on the edge of the board are no longer safe from captures.
+    </Note>
+
+    ```text
+    Variant key: frisian
+    Board:       10×10 (D100)
+    ```
+  </Accordion>
+
+  <Accordion title="Antidraughts — lose all your pieces to win">
+    Antidraughts reverses the win condition: the player who loses all their pieces (or runs out of legal moves) wins the game.
+
+    **Board**: 10×10, standard starting position.
+
+    **Movement and captures**: Same movement rules as Standard. Captures remain mandatory — if a capture is available you must take it.
+
+    **Win condition**: You win when you have no pieces left or no legal moves available. Your opponent wins by being the last one with pieces or moves.
+
+    **No drawing rules**: Antidraughts has no built-in drawing thresholds. Threefold repetition still applies.
+
+    <Tip>
+    Because captures are mandatory, a key strategy is to force your opponent to capture your pieces rather than offer them voluntarily.
+    </Tip>
+
+    ```text
+    Variant key: antidraughts
+    Board:       10×10 (D100)
+    ```
+  </Accordion>
+
+  <Accordion title="Frysk! — Frisian draughts with 5 pieces per side">
+    Frysk! uses the Frisian capture rules (all 8 directions, value-based priority) but starts with only 5 pieces per side placed on the back rank.
+
+    **Board**: 10×10.
+
+    **Starting position**: White pieces on squares 46–50, Black pieces on squares 1–5. Both sides begin with 5 men on their respective back ranks.
+
+    ```text
+    Initial FEN: W:W46,47,48,49,50:B1,2,3,4,5:H0:F1
+    ```
+
+    **Movement and captures**: Identical to Frisian — 8-directional captures with value-based priority.
+
+    **Why play Frysk!**: The small piece count leads to immediate, sharp tactical battles from move one. Games are typically much shorter than Standard or Frisian.
+
+    ```text
+    Variant key: frysk
+    Board:       10×10 (D100)
+    ```
+  </Accordion>
+
+  <Accordion title="Breakthrough — first to promote wins">
+    Breakthrough is a racing variant: the first player to promote a man to a king wins immediately, regardless of material.
+
+    **Board**: 10×10, standard starting position with 20 pieces per side.
+
+    **Movement**: Men move diagonally forward only. There are no kings during the game — the moment the first king would appear on the board the game ends.
+
+    **Captures**: Standard diagonal captures, mandatory. Captured pieces are removed immediately.
+
+    **Win condition**: Promoting a man to the back rank wins the game instantly. If a player has no legal moves, the opponent wins.
+
+    **No drawing rules**: There are no drawing thresholds in Breakthrough.
+
+    <Note>
+    Because promotion wins immediately, both attack and defence revolve entirely around advancing pieces and blocking the opponent's advance.
+    </Note>
+
+    ```text
+    Variant key: breakthrough
+    Board:       10×10 (D100)
+    ```
+  </Accordion>
+
+  <Accordion title="Russian draughts — 8×8 with free capture choice">
+    Russian draughts is played on an 8×8 board and is popular in Russia and Eastern Europe. It differs from Brazilian in its capture rules.
+
+    **Board**: 8×8, 12 pieces per side arranged on three ranks.
+
+    ```text
+    Initial FEN: W:W21,22,23,24,25,26,27,28,29,30,31,32:B1,2,3,4,5,6,7,8,9,10,11,12:H0:F1
+    ```
+
+    **Movement**: Men move diagonally forward. Kings move long-range diagonally in all four directions.
+
+    **Key distinctions from Standard**:
+    - **Free capture choice** — when multiple capture sequences are available you may choose any of them (no longest-capture obligation).
+    - **Mid-capture promotion** — if a man reaches the promotion rank during a multi-capture sequence, it is promoted immediately and may continue capturing as a king.
+
+    **Drawing rules** follow FMJD 64 rules (fmjd64.org), including specific endgame thresholds for 4–7 piece endings, the 15-move king-only rule, and the long-diagonal rule.
+
+    ```text
+    Variant key: russian
+    Board:       8×8 (D64)
+    ```
+  </Accordion>
+
+  <Accordion title="Brazilian draughts — FMJD rules on 8×8">
+    Brazilian draughts uses the same starting position as Russian draughts but applies international FMJD capture rules (longest capture mandatory) on the 8×8 board.
+
+    **Board**: 8×8, same starting position as Russian.
+
+    **Captures**: The longest capture sequence must be taken — the same obligation as Standard 10×10. This is the key difference from Russian.
+
+    **Mid-capture promotion**: A man promoted during a capture sequence does **not** continue as a king in the same move (unlike Russian).
+
+    **Drawing rules**: Same as Russian (FMJD 64 thresholds).
+
+    ```text
+    Variant key: brazilian
+    Board:       8×8 (D64)
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Choosing a variant for your game
+
+<CardGroup cols={2}>
+  <Card title="New to draughts" icon="flag">
+    Start with **Standard**. It is the most widely played and has the largest pool of opponents and study material.
+  </Card>
+  <Card title="Want sharp tactics" icon="zap">
+    Try **Frisian** or **Frysk!** — the 8-directional captures create explosive tactical positions.
+  </Card>
+  <Card title="Something different" icon="shuffle">
+    **Antidraughts** and **Breakthrough** offer completely different strategic goals and are a refreshing change of pace.
+  </Card>
+  <Card title="8×8 board player" icon="grid">
+    **Russian** and **Brazilian** are the standard choices if you prefer the 8×8 board used in chess.
+  </Card>
+</CardGroup>

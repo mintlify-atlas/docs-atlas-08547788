@@ -1,0 +1,101 @@
+---
+title: "Tactics puzzles"
+description: "Train your draughts tactics with puzzles on Lidraughts"
+---
+
+Lidraughts includes a tactics puzzle trainer at [lidraughts.org/training](https://lidraughts.org/training). Puzzles are positions taken from real games where there is a single best sequence of moves. Solving puzzles improves your ability to spot forced captures, combinations, and winning plans during your own games.
+
+## Finding puzzles
+
+Visit [lidraughts.org/training](https://lidraughts.org/training) to start solving puzzles immediately — no account required. Each puzzle presents a position and asks you to find the best move or sequence.
+
+Puzzles are available for all supported variants:
+
+| Variant | URL |
+|---|---|
+| Standard | `/training` or `/training/new` |
+| Frisian | `/training/frisian/new` |
+| Antidraughts | `/training/antidraughts/new` |
+| Frysk! | `/training/frysk/new` |
+| Breakthrough | `/training/breakthrough/new` |
+| Russian | `/training/russian/new` |
+| Brazilian | `/training/brazilian/new` |
+
+## The solving interface
+
+When you open a puzzle:
+
+1. The board is shown from the perspective of the side to move.
+2. The position is reached by playing the last move of the source game automatically — you see what your opponent just played.
+3. You must find and play the correct response.
+
+<Steps>
+  <Step title="Study the position">
+    Look for forcing sequences: multi-captures, promotion threats, and pieces at risk.
+  </Step>
+  <Step title="Make your move">
+    Click a piece and then the destination square. If the move is correct, the opponent's reply is played automatically and you continue until the sequence is complete.
+  </Step>
+  <Step title="Result">
+    A green highlight means your move was correct. A red highlight means it was wrong — the correct move is shown and you can continue from there.
+  </Step>
+  <Step title="Next puzzle">
+    After completing a puzzle, click **Continue** to load the next one.
+  </Step>
+</Steps>
+
+<Tip>
+You can use the board editor or analysis board alongside a puzzle to explore alternative lines. Open [lidraughts.org/analysis](https://lidraughts.org/analysis) in a separate tab and paste the FEN from the puzzle.
+</Tip>
+
+## Rating system
+
+Puzzles and players each have a Glicko-2 rating. Solving a puzzle correctly increases your puzzle rating; failing reduces it. The puzzle's own rating adjusts in the opposite direction.
+
+- Starting puzzle rating: 1500
+- Your puzzle rating is displayed on the training page and in your profile.
+- Puzzle ratings are separate from your game ratings and do not affect them.
+
+<Info>
+Because puzzles use the Glicko-2 system, your rating deviation decreases as you solve more puzzles, making your rating more stable and accurate over time.
+</Info>
+
+## Daily puzzle
+
+The daily puzzle is available at [lidraughts.org/training/daily](https://lidraughts.org/training/daily). A single featured puzzle is selected each day based on vote ratio — higher-voted puzzles are preferred. The daily puzzle is the same for all users.
+
+The daily puzzle is also displayed on the Lidraughts homepage for logged-in users.
+
+## Batch solving
+
+The batch API allows external applications to fetch and submit solutions for multiple puzzles at once:
+
+```text
+GET  /training/{variant}/batch   — fetch a batch of puzzles
+POST /training/{variant}/batch   — submit solutions for a batch
+```
+
+## Voting on puzzles
+
+After solving a puzzle you can vote it up or down:
+
+- **Thumbs up** — the puzzle is well-constructed and instructive.
+- **Thumbs down** — the puzzle is flawed, has an alternative solution, or is not instructive.
+
+Votes affect whether a puzzle continues to appear for other users. Puzzles with a vote ratio below the minimum threshold are disabled from the normal training rotation.
+
+To vote:
+
+```text
+POST /training/{id}/vote             (Standard)
+POST /training/{variant}/{id}/vote   (other variants)
+```
+
+## Puzzle export
+
+Puzzle positions can be exported as PNG images:
+
+```text
+GET /training/export/png/{id}.png
+GET /training/export/png/{variant}/{id}.png
+```

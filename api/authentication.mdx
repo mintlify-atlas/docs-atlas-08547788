@@ -1,0 +1,120 @@
+---
+title: "Authentication"
+description: "OAuth2 authentication for the Lidraughts API"
+---
+
+# Authentication
+
+Lidraughts uses OAuth2 for API authentication. You can authenticate with a **personal access token** (simplest) or via the full **OAuth2 authorization code flow** (for apps acting on behalf of other users).
+
+## Personal access tokens
+
+Personal access tokens are the quickest way to authenticate. They are associated with your account and carry the scopes you select.
+
+1. Go to [https://lidraughts.org/account/oauth/token](https://lidraughts.org/account/oauth/token)
+2. Click **New access token**
+3. Select the scopes your application needs
+4. Copy the token — it is only shown once
+
+<Warning>
+  Treat tokens like passwords. Never commit them to source control.
+</Warning>
+
+## Using a token
+
+Pass the token in the `Authorization` HTTP header on every request:
+
+```bash
+curl -H "Authorization: Bearer lip_yourtoken" \
+  https://lidraughts.org/api/account
+```
+
+## OAuth2 app registration
+
+If you are building an application that authenticates other Lidraughts users, register an OAuth2 app:
+
+1. Go to [https://lidraughts.org/account/oauth/app](https://lidraughts.org/account/oauth/app)
+2. Click **New application**
+3. Fill in the name and redirect URI
+4. Note the `client_id` and `client_secret`
+
+## OAuth2 authorization flow
+
+### Step 1 — Redirect the user
+
+Redirect the user to the authorization endpoint with your client ID, requested scopes, and redirect URI:
+
+```
+https://lidraughts.org/oauth?response_type=code
+  &client_id=YOUR_CLIENT_ID
+  &redirect_uri=https://yourapp.example/callback
+  &scope=challenge:write+tournament:write
+  &state=RANDOM_STATE_VALUE
+```
+
+### Step 2 — Exchange the code
+
+After the user approves, Lidraughts redirects to your `redirect_uri` with a `code` parameter. Exchange it for an access token:
+
+```bash
+curl -X POST https://lidraughts.org/api/token \
+  -d 'grant_type=authorization_code' \
+  -d 'code=AUTHORIZATION_CODE' \
+  -d 'redirect_uri=https://yourapp.example/callback' \
+  -d 'client_id=YOUR_CLIENT_ID' \
+  -d 'client_secret=YOUR_CLIENT_SECRET'
+```
+
+### Step 3 — Use the token
+
+```bash
+curl -H "Authorization: Bearer ACCESS_TOKEN" \
+  https://lidraughts.org/api/account
+```
+
+## Revoking tokens
+
+Tokens can be revoked from [https://lidraughts.org/account/oauth/token](https://lidraughts.org/account/oauth/token) by clicking **Revoke** next to the token. To revoke a specific token by ID via the web interface:
+
+```
+POST /account/oauth/token/:id/delete
+```
+
+## Available scopes
+
+Select only the scopes your application needs:
+
+| Scope key | Description |
+|---|---|
+| `preference:read` | Read your preferences |
+| `preference:write` | Write your preferences |
+| `email:read` | Read your email address |
+| `challenge:read` | Read incoming challenges |
+| `challenge:write` | Create, accept, and decline challenges |
+| `tournament:write` | Create and update tournaments |
+| `puzzle:read` | Read puzzle activity |
+| `team:write` | Join, leave, and manage teams |
+| `bot:play` | Play games with the bot API |
+
+<Note>
+  The `bot:play` scope is required for bot accounts. Upgrading an account to a bot account is irreversible.
+</Note>
+
+## Example: authenticated request
+
+```bash
+# Get your account information
+curl -H "Authorization: Bearer lip_yourtoken" \
+  https://lidraughts.org/api/account
+
+# Read your email address (requires email:read scope)
+curl -H "Authorization: Bearer lip_yourtoken" \
+  https://lidraughts.org/api/account/email
+
+# Create a challenge (requires challenge:write scope)
+curl -X POST \
+  -H "Authorization: Bearer lip_yourtoken" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d 'rated=true&clock.limit=300&clock.increment=3' \
+  https://lidraughts.org/api/challenge/targetuser
+```

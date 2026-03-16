@@ -1,0 +1,142 @@
+---
+title: "Teams"
+description: "Create and join teams on Lidraughts"
+---
+
+Teams are player-created groups on Lidraughts. They have their own pages, forums, member chats, and tournaments. Anyone can create a team or join an existing one.
+
+## Browsing teams
+
+Visit [lidraughts.org/team](https://lidraughts.org/team) to see the most popular teams. If you are already a member of one or more teams, the page redirects to your personal team list at `lidraughts.org/team/me`. You can browse all teams at `lidraughts.org/team/all` or search by name.
+
+<CardGroup cols={2}>
+  <Card title="All teams" icon="users" href="https://lidraughts.org/team/all">
+    Browse teams sorted by member count.
+  </Card>
+  <Card title="Search teams" icon="magnifying-glass" href="https://lidraughts.org/team/search">
+    Find a specific team by name.
+  </Card>
+  <Card title="My teams" icon="user-group" href="https://lidraughts.org/team/me">
+    See every team you belong to.
+  </Card>
+  <Card title="Join requests" icon="envelope-open" href="https://lidraughts.org/team/requests">
+    Review pending join requests for teams you lead.
+  </Card>
+</CardGroup>
+
+## Creating a team
+
+<Info>
+  You can create at most one team per week. If you have already created a team recently, the form will be blocked until the cooldown expires.
+</Info>
+
+<Steps>
+  <Step title="Open the creation form">
+    Go to [lidraughts.org/team/new](https://lidraughts.org/team/new) while logged in.
+  </Step>
+  <Step title="Fill in the details">
+    Provide the following fields:
+
+    | Field | Requirements |
+    |---|---|
+    | **Name** | 3–60 characters. Must be unique across all teams. |
+    | **Location** | Optional. 3–80 characters. |
+    | **Description** | 30–4 000 characters. Shown on the team page. |
+    | **Membership** | Open (anyone can join immediately) or approval required (leader reviews each request). |
+
+  </Step>
+  <Step title="Complete the captcha">
+    Solve the draughts captcha to confirm you are human.
+  </Step>
+  <Step title="Submit">
+    Click **Create** to publish the team. You are automatically added as the first member and become the team leader.
+  </Step>
+</Steps>
+
+## Joining a team
+
+How you join depends on the team's membership setting.
+
+<Tabs>
+  <Tab title="Open team">
+    Click **Join** on the team's page at `/team/<id>`. You are added instantly with no approval required.
+  </Tab>
+  <Tab title="Approval required">
+    Click **Request membership** to open the join-request form at `/team/<id>/request/new`. Write a message (30–2 000 characters) explaining why you want to join. The team leader reviews your request and accepts or declines it. You receive a notification with the decision.
+  </Tab>
+</Tabs>
+
+<Tip>
+  If you change your mind before a leader acts on your request, visit the team page and click **Cancel request**.
+</Tip>
+
+## Team page
+
+A team page at `/team/<id>` shows:
+
+- Team name, location, and description
+- Member count and member list (paginated)
+- Live team chat (if enabled by the leader)
+- Upcoming and recent tournaments
+- Links to the team forum
+
+## Team forum
+
+Each team has a dedicated forum category. Team members can start topics and post replies. The forum is accessible from the team page and follows the same rules as the global [Forum](/community/forum).
+
+<Note>
+  Team forum categories are only visible to team members. Non-members cannot read or post in a team's private forum.
+</Note>
+
+## Team tournaments
+
+Teams can host tournaments restricted to their members, including **Team Battles** where multiple teams compete against each other.
+
+Visit `/team/<id>/tournaments` to see all tournaments associated with a team.
+
+<CardGroup cols={2}>
+  <Card title="Team tournament" icon="trophy">
+    A standard Arena or Swiss tournament where only team members can participate.
+  </Card>
+  <Card title="Team Battle" icon="swords">
+    Multiple teams are pitted against each other. Each participant plays for their team, and the team with the most points wins.
+  </Card>
+</CardGroup>
+
+Leaders can also send a message to all subscribed team members from the **PM all** admin page — useful for announcing upcoming events.
+
+## Team leaders
+
+The player who creates a team is its leader. A leader can:
+
+- Edit the team's name, description, location, membership policy, and chat setting
+- Accept or decline join requests
+- Kick members from the team
+- Transfer ownership to another member
+- Send a broadcast message to all subscribed members
+
+<Warning>
+  Ownership transfer is permanent. Once you transfer ownership, you lose leader permissions unless the new owner grants them back.
+</Warning>
+
+To transfer ownership, go to `/team/<id>/changeOwner` and select a current member.
+
+### Kicking a member
+
+Leaders can remove members at `/team/<id>/kick`. Select the username from the list and confirm. The removed member can re-apply if the team has open membership.
+
+## Leaving a team
+
+To leave a team you belong to, open the team page and click **Quit team**. You will be redirected back to the team page and your membership is immediately removed.
+
+<Note>
+  The team leader cannot leave their own team without first transferring ownership to another member.
+</Note>
+
+## Member subscriptions
+
+Team members can subscribe or unsubscribe from team messages. When a leader sends a broadcast via **PM all**, only subscribed members receive it. Toggle your subscription from the team page.
+
+## Team search
+
+Use the search bar at [lidraughts.org/team/search](https://lidraughts.org/team/search) to find teams by name. The search supports partial matches and returns results sorted by member count. Autocomplete is also available when adding a team reference elsewhere on the site.

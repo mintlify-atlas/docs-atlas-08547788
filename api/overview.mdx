@@ -1,0 +1,112 @@
+---
+title: "API overview"
+description: "Lidraughts REST API — free and open access to draughts data"
+---
+
+# API overview
+
+The Lidraughts REST API provides free, open access to draughts data: games, users, tournaments, and more. No registration is required for most read endpoints.
+
+## Base URL
+
+All API endpoints are served from:
+
+```
+https://lidraughts.org
+```
+
+## Response format
+
+Endpoints return **JSON** by default. Streaming endpoints return **NDJSON** (newline-delimited JSON), where each line is a complete JSON object. This allows progressive parsing of large datasets.
+
+```
+// NDJSON example — each line is valid JSON
+{"id":"abcd1234","rated":true,"variant":"standard"}
+{"id":"efgh5678","rated":false,"variant":"frisian"}
+```
+
+When an endpoint supports NDJSON streaming, send the `Accept: application/x-ndjson` header to request it.
+
+## Status endpoint
+
+Check the API and server status:
+
+```bash
+curl https://lidraughts.org/api/status
+```
+
+Example response:
+
+```json
+{
+  "api": {
+    "current": 5,
+    "olds": [
+      {
+        "version": 4,
+        "deprecatedAt": "2020-01-01T00:00:00Z",
+        "unsupportedAt": "2021-01-01T00:00:00Z"
+      }
+    ]
+  }
+}
+```
+
+## Rate limiting
+
+The API enforces rate limits to ensure fair access. Limits vary by endpoint:
+
+| Endpoint group | Limit |
+|---|---|
+| Single game (`/api/game/:id`) | 100 requests / minute per IP |
+| User games export | 10,000 requests / 10 minutes per IP |
+| User status (`/api/users/status`) | Soft limits per IP |
+| Crosstable | 30 requests / 10 minutes per IP |
+| User activity | 15 requests / 2 minutes per IP |
+| Bulk user lookup | 1,000 requests / minute per IP |
+
+When a rate limit is exceeded, the API returns **HTTP 429** with the body:
+
+```json
+{"error": "Error 429: Too many requests! Try again later."}
+```
+
+<Tip>
+  Authenticated requests (Bearer token) often receive higher rate limits than anonymous requests.
+</Tip>
+
+## Error handling
+
+| HTTP status | Meaning |
+|---|---|
+| `200 OK` | Success |
+| `400 Bad Request` | Invalid parameters |
+| `401 Unauthorized` | Missing or invalid token |
+| `404 Not Found` | Resource does not exist |
+| `429 Too Many Requests` | Rate limit exceeded |
+
+Error responses are JSON objects with an `error` key:
+
+```json
+{"error": "No such user"}
+```
+
+## Pagination
+
+Endpoints that return lists accept a `page` query parameter (1-indexed):
+
+```bash
+curl https://lidraughts.org/api/tournament?page=2
+```
+
+Paginated responses include a `paginator` object with `currentPage`, `maxPerPage`, `currentPageResults`, `nbResults`, `previousPage`, `nextPage`, and `nbPages`.
+
+## Authentication
+
+Many endpoints work without authentication. To access private data or perform write operations, authenticate with a Bearer token.
+
+```bash
+curl -H "Authorization: Bearer lip_yourtoken" https://lidraughts.org/api/account
+```
+
+See the [Authentication guide](/api/authentication) for details on creating tokens and OAuth2 flows.

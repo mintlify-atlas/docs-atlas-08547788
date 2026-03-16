@@ -1,0 +1,247 @@
+---
+title: "Nginx configuration"
+description: "Configure Nginx as a reverse proxy for Lidraughts"
+---
+
+Lidraughts requires a reverse proxy in front of the Play server for two critical reasons:
+
+1. **WebSocket proxying** — Real-time game play, chat, and analysis use persistent WebSocket connections on a dedicated `socket.*` subdomain. Nginx handles the HTTP → WebSocket upgrade.
+2. **Static asset serving** — Nginx serves the compiled CSS/JS from `public/` directly, bypassing the JVM entirely for much better performance.
+
+The example configuration file at `doc/example_nginx.conf` in the repository shows the complete minimal setup.
+
+## Full example configuration
+
+This is the full content of `doc/example_nginx.conf`, with annotations:
+
+```nginx
+#user  nobody;
+worker_processes  1;
+
+events {
+    worker_connections  1024;
+}
+
+http {
+    include       mime.types;
+    default_type  application/octet-stream;
+
+    sendfile        on;
+    keepalive_timeout  65;
+
+    # Redirect www. to the bare domain
+    server {
+      listen 80;
+      server_name www.yourdomain.org;
+      return 301 $scheme://yourdomain.org$request_uri;
+    }
+
+    # WebSocket server (socket subdomain)
+    server {
+      listen 80;
+      server_name socket.yourdomain.org;
+
+      charset utf-8;
+
+      location / {
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header X-Forwarded-For $remote_addr;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_pass http://127.0.0.1:9663;
+      }
+    }
+
+    # Main application server
+    server {
+      listen 80;
+      server_name yourdomain.org;
+
+      charset utf-8;
+
+      # Serve compiled assets directly from the filesystem
+      location /assets {
+        add_header "Access-Control-Allow-Origin" "*";
+        alias path_to_lidraughts_root/public;
+      }
+
+      # Proxy all other requests to Play
+      location / {
+        proxy_set_header Host $http_host;
+        proxy_set_header X-Forwarded-For $remote_addr;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 90s;
+        proxy_http_version 1.1;
+        proxy_pass http://127.0.0.1:9663;
+      }
+
+      # Custom error pages
+      error_page 500 501 502 503 /oops/servererror.html;
+      error_page 504 /oops/timeout.html;
+      error_page 429 /oops/toomanyrequests.html;
+      location /oops/ {
+        root path_to_lidraughts_root/public;
+      }
+    }
+}
+```
+
+Replace `yourdomain.org` with your actual domain, and replace `path_to_lidraughts_root` with the absolute path to your Lidraughts checkout.
+
+## WebSocket proxy
+
+Real-time features (live game play, lobby, tournaments, studies) communicate over WebSocket connections routed to the `socket.yourdomain.org` subdomain. The critical Nginx directives for WebSocket proxying are:
+
+```nginx
+proxy_http_version 1.1;
+proxy_set_header Upgrade $http_upgrade;
+proxy_set_header Connection "upgrade";
+```
+
+Without these, browsers will fall back to long-polling or fail to connect entirely.
+
+<Note>
+  Create a DNS A record for `socket.yourdomain.org` pointing to the same server IP as your main domain.
+</Note>
+
+## Static asset serving
+
+The `location /assets` block serves compiled CSS and JavaScript directly from the filesystem:
+
+```nginx
+location /assets {
+  add_header "Access-Control-Allow-Origin" "*";
+  alias /opt/lidraughts/public;
+}
+```
+
+The `Access-Control-Allow-Origin: *` header is required because assets may be loaded cross-origin (e.g. from the socket subdomain or embedded boards).
+
+Make sure the `public/` directory is populated before starting Nginx. The UI build writes files there:
+
+```bash
+cd ui && yarn gulp css-prod
+```
+
+For the staged production build, set `SERVE_ASSETS=0` (the default) so Play does not attempt to serve assets itself.
+
+## SSL/TLS with Let's Encrypt
+
+For a production instance, terminate TLS at Nginx using a Let's Encrypt certificate. Install Certbot and obtain certificates for both the main domain and the socket subdomain:
+
+```bash
+sudo apt-get install certbot python3-certbot-nginx
+sudo certbot --nginx -d yourdomain.org -d www.yourdomain.org -d socket.yourdomain.org
+```
+
+Certbot modifies your Nginx config to add the SSL blocks. After obtaining the certificate, update your `conf/application.conf` to tell Lidraughts it is running behind HTTPS:
+
+```hocon
+net {
+  protocol = "https://"
+  domain = "yourdomain.org"
+}
+```
+
+Your SSL-enabled Nginx config should look like:
+
+```nginx
+# Main site with SSL
+server {
+  listen 443 ssl;
+  server_name yourdomain.org;
+
+  ssl_certificate     /etc/letsencrypt/live/yourdomain.org/fullchain.pem;
+  ssl_certificate_key /etc/letsencrypt/live/yourdomain.org/privkey.pem;
+
+  charset utf-8;
+
+  location /assets {
+    add_header "Access-Control-Allow-Origin" "*";
+    alias /opt/lidraughts/public;
+  }
+
+  location / {
+    proxy_set_header Host $http_host;
+    proxy_set_header X-Forwarded-For $remote_addr;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_read_timeout 90s;
+    proxy_http_version 1.1;
+    proxy_pass http://127.0.0.1:9663;
+  }
+
+  error_page 500 501 502 503 /oops/servererror.html;
+  error_page 504 /oops/timeout.html;
+  error_page 429 /oops/toomanyrequests.html;
+  location /oops/ {
+    root /opt/lidraughts/public;
+  }
+}
+
+# WebSocket with SSL
+server {
+  listen 443 ssl;
+  server_name socket.yourdomain.org;
+
+  ssl_certificate     /etc/letsencrypt/live/yourdomain.org/fullchain.pem;
+  ssl_certificate_key /etc/letsencrypt/live/yourdomain.org/privkey.pem;
+
+  charset utf-8;
+
+  location / {
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+    proxy_set_header X-Forwarded-For $remote_addr;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_pass http://127.0.0.1:9663;
+  }
+}
+
+# Redirect HTTP → HTTPS
+server {
+  listen 80;
+  server_name yourdomain.org www.yourdomain.org socket.yourdomain.org;
+  return 301 https://$host$request_uri;
+}
+```
+
+## Gzip compression
+
+Enable gzip to reduce asset transfer sizes. Add this inside the `http {}` block:
+
+```nginx
+gzip on;
+gzip_types text/plain text/css application/json application/javascript
+           text/xml application/xml application/xml+rss text/javascript;
+gzip_min_length 1024;
+gzip_vary on;
+```
+
+## Custom error pages
+
+Lidraughts ships pre-built error pages under `public/oops/`:
+
+| File | Triggered by |
+|---|---|
+| `public/oops/servererror.html` | HTTP 500, 501, 502, 503 |
+| `public/oops/timeout.html` | HTTP 504 |
+| `public/oops/toomanyrequests.html` | HTTP 429 |
+
+The Nginx config in the example routes these error codes to the static files so users see a styled error page rather than a raw Nginx error.
+
+## Testing your configuration
+
+```bash
+# Check Nginx config syntax
+sudo nginx -t
+
+# Reload without downtime
+sudo nginx -s reload
+
+# Verify WebSocket connectivity
+curl -i -N -H "Connection: Upgrade" -H "Upgrade: websocket" \
+  -H "Host: socket.yourdomain.org" \
+  http://socket.yourdomain.org/
+```

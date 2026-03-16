@@ -1,0 +1,136 @@
+---
+title: "Playing games"
+description: "How to play live draughts games on Lidraughts"
+---
+
+Lidraughts lets you play live draughts against other players from around the world or against the computer. Games are created and joined directly from the lobby, and all variants supported by the platform are available for live play.
+
+## The lobby
+
+The lobby at [lidraughts.org](https://lidraughts.org) is the central hub for finding games. It shows:
+
+- **Open seeks** — game offers posted by other players that you can accept instantly
+- **Active players** — players currently looking for a game
+- **Ongoing games** — a live view of games in progress
+
+You can filter the seek list by time control, variant, and rating range using the filter controls at the top of the lobby.
+
+## Creating a game
+
+<Steps>
+  <Step title="Open the game creation form">
+    Click **Create a game** in the lobby. You can also challenge a specific player by visiting their profile and clicking **Challenge to a game**.
+  </Step>
+  <Step title="Choose your time control">
+    Select a time control that fits the speed you want to play. See the time control reference below.
+  </Step>
+  <Step title="Select a variant">
+    Choose Standard or any of the seven supported draughts variants. See [Draughts variants](/features/variants) for a full description of each.
+  </Step>
+  <Step title="Set rated or casual">
+    Rated games affect your rating. Casual games do not. You must be logged in to play rated games.
+  </Step>
+  <Step title="Post or play">
+    Click **Create** to post your game as a seek in the lobby, or wait to be paired automatically.
+  </Step>
+</Steps>
+
+## Time controls
+
+Lidraughts categorises games by the estimated total time per player. The category is determined from the clock configuration.
+
+| Category | Estimated time | Example clocks |
+|---|---|---|
+| UltraBullet | Under 30 seconds | 0+1, 15+0 |
+| Bullet | 30 s – 3 min | 1+0, 2+1 |
+| Blitz | 3 – 8 min | 3+0, 5+0, 3+2 |
+| Rapid | 8 – 25 min | 10+0, 15+10 |
+| Classical | 25 min and above | 30+0, 20+10 |
+| Correspondence | No live clock | Days per move |
+
+<Info>
+Correspondence games use a days-per-move clock rather than a countdown timer. You can make moves at your convenience and the game progresses asynchronously.
+</Info>
+
+## Playing against the computer
+
+You can practise against the Scan 3.1 engine at [lidraughts.org/setup/ai](https://lidraughts.org/setup/ai). Select a difficulty level from 1 (easiest) to 8 (strongest) and choose any supported variant. Computer games are always casual and do not affect your rating.
+
+## Accepting challenges
+
+Incoming challenges appear as a notification in the top navigation bar. You can accept or decline the challenge directly from the notification. Declined challenges are not shown to the challenger.
+
+To send a challenge to a specific player:
+1. Visit their profile page at `/@/username`.
+2. Click **Challenge to a game**.
+3. Configure the time control and variant.
+4. Click **Challenge**.
+
+The other player receives a notification and can accept or decline.
+
+## The game interface
+
+During a live game the board is at the centre of the screen. The interface provides:
+
+<CardGroup cols={2}>
+  <Card title="Move input" icon="hand-pointer">
+    Click or tap a piece to select it, then click the destination square. Legal moves are highlighted automatically.
+  </Card>
+  <Card title="Clock" icon="clock">
+    Both players' clocks are shown beside the board. Your clock runs when it is your turn.
+  </Card>
+  <Card title="Move list" icon="list">
+    A scrollable list of all moves played so far, shown in PDN notation.
+  </Card>
+  <Card title="Chat" icon="message-square">
+    A live chat box for communication with your opponent and spectators.
+  </Card>
+</CardGroup>
+
+### Drawing and resigning
+
+Buttons for offering a draw, resigning, and requesting a takeback appear below the board.
+
+- **Offer draw** — sends a draw offer to your opponent. They can accept or decline.
+- **Resign** — immediately ends the game and awards the win to your opponent.
+- **Takeback** — requests your opponent to allow you to take back your last move. Both players must agree.
+
+<Warning>
+Resigning is irreversible. Use the draw offer if you believe the position is equal.
+</Warning>
+
+### Premoves
+
+You can queue a move before your opponent has played by clicking your intended piece and destination while it is not your turn. The premove is executed instantly when your turn arrives. Premoves are shown highlighted on the board.
+
+## Game result screen
+
+When the game ends, a result screen appears showing:
+
+- The outcome (win, loss, draw) and reason (checkmate, resignation, time, stalemate, etc.)
+- Rating changes for both players (rated games only)
+- Options to **Rematch**, **New opponent**, or **Analyse** the game
+
+## Watching games (TV)
+
+Lidraughts TV at [lidraughts.org/tv](https://lidraughts.org/tv) streams the best ongoing game in real time. Channels are available for each time control and variant:
+
+- Visit [lidraughts.org/tv/channels](https://lidraughts.org/tv/channels) to see all available channels.
+- Visit `/@/username/tv` to watch a specific player's current or most recent game.
+
+Any ongoing game can be watched by sharing the game URL. Spectators see the board, move list, and clock, and can participate in the game chat.
+
+## Exporting games
+
+You can export games in PDN format:
+
+- **Single game**: visit `/game/export/{gameId}` or `/game/export/{gameId}.pdn`
+- **All games for a user**: `GET /games/export/{username}` returns a PDN file of all their games
+- **Multiple games by ID**: `POST /games/export/_ids` with a list of game IDs
+
+```text
+GET /games/export/{username}
+GET /game/export/{gameId}.pdn
+```
+
+Exported PDN files include clocks, opening names, and evaluation annotations when available.

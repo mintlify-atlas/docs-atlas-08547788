@@ -1,0 +1,223 @@
+---
+title: "Account setup"
+description: "Create and configure your Lidraughts account"
+---
+
+A Lidraughts account lets you build a rating history, join tournaments, save
+games, and interact with the community. This page covers registration through
+to securing your account.
+
+## Registration
+
+<Steps>
+  <Step title="Open the sign-up page">
+    Go to `https://lidraughts.org/signup` (`GET /signup`). The form is also
+    reachable via the **Sign up** link in the top-right corner of any page.
+  </Step>
+
+  <Step title="Fill in your details">
+    The sign-up form requires three fields:
+
+    | Field | Rules |
+    |---|---|
+    | **Username** | Letters, digits, underscores, and hyphens. Between 2 and 20 characters. Case-insensitive for login but displayed as entered. |
+    | **Email** | A valid, reachable email address. Used for confirmation and password recovery only — never shown publicly. |
+    | **Password** | At least 4 characters. Choose something you do not reuse elsewhere. |
+
+    Complete the CAPTCHA challenge if prompted, then click **Create my account**.
+
+    The form is submitted to `POST /signup`.
+  </Step>
+
+  <Step title="Confirm your email">
+    Depending on Lidraughts's server-side heuristics (new IP address, missing
+    browser fingerprint, mobile signup), you may be redirected to a
+    **Check your email** page at `GET /signup/check-your-email`.
+
+    Open the confirmation email and click the link. The link hits:
+
+    ```text
+    GET /signup/confirm/:token
+    ```
+
+    On success you are automatically logged in and redirected to your new
+    profile page. If you entered the wrong email address, use the fix-email
+    form at `POST /signup/fix-email` before the token expires.
+  </Step>
+
+  <Step title="You're in">
+    After confirmation (or immediately if email confirmation was not required)
+    you land on your profile at `/@/:username`. Your account starts with no
+    rating — you will be provisionally rated after your first games in each
+    time-control category.
+  </Step>
+</Steps>
+
+## Profile setup
+
+Navigate to **Settings → Profile** (`GET /account/profile`) to fill in your
+public profile. Changes are saved with `POST /account/profile`.
+
+Available profile fields:
+
+| Field | Description |
+|---|---|
+| **Bio** | Free-text description, visible on your public profile. |
+| **First name / Last name** | Optional real name. |
+| **Country / Location** | Flag and region shown on your profile. |
+| **FIDE rating** | Your official FIDE draughts rating, if you have one. |
+| **Links** | Up to four external profile links (e.g. social media). |
+
+Your username can also be changed once from **Settings → Username**
+(`GET /account/username`), subject to availability.
+
+## Preferences
+
+Go to **Settings → Preferences** (`GET /account/preferences/:categSlug`) to
+customise how Lidraughts looks and behaves. Preferences are applied globally
+across all devices when you are signed in.
+
+<Tabs>
+  <Tab title="Display">
+    Control the visual appearance of the board and site.
+
+    | Setting | Description |
+    |---|---|
+    | **Board theme** | The colour scheme of the draughts board squares. Set via `POST /pref/set/theme`. |
+    | **Piece set** | The style of the draughts pieces. Set via `POST /pref/set/pieceSet`. |
+    | **Background** | Light, dark, or a custom background image. Set via `POST /pref/set/bg` and `POST /pref/set/bgImg`. |
+    | **Zen mode** | Hides most UI chrome during a game. Set via `POST /pref/set/zen`. |
+    | **Board zoom** | Adjusts the board size. Stored as a session cookie via `POST /pref/set/zoom`. |
+  </Tab>
+  <Tab title="Sound">
+    | Setting | Description |
+    |---|---|
+    | **Sound set** | The sound theme for move notifications, clock warnings, and game events. Set via `POST /pref/set/soundSet`. |
+  </Tab>
+  <Tab title="Game behaviour">
+    Game behaviour preferences — such as move confirmation, premove, and
+    animation speed — are available in the full preferences form under the
+    relevant category slugs (e.g. `/account/preferences/game`).
+  </Tab>
+  <Tab title="Language">
+    Lidraughts is available in 27 languages. Select your preferred language from
+    **Settings** or via the language picker in the site footer. The selection is
+    saved with `POST /translation/select`.
+
+    If your language is missing or incomplete, you can contribute translations
+    at [Crowdin](https://crowdin.com/project/lidraughts).
+  </Tab>
+</Tabs>
+
+## Two-factor authentication
+
+Two-factor authentication (2FA) adds a time-based one-time password (TOTP)
+requirement at login, protecting your account even if your password is
+compromised.
+
+<Steps>
+  <Step title="Open the 2FA settings page">
+    Go to **Settings → Security → Two-factor authentication**
+    (`GET /account/twofactor`). If 2FA is not yet active you will see the
+    setup form.
+  </Step>
+
+  <Step title="Scan the QR code">
+    Open any TOTP authenticator app (e.g. Google Authenticator, Authy, or a
+    password manager with TOTP support) and scan the QR code shown on screen.
+    The app will start generating 6-digit codes that rotate every 30 seconds.
+  </Step>
+
+  <Step title="Verify and save">
+    Enter the current 6-digit code from your app into the confirmation field,
+    then submit the form (`POST /account/twofactor/setup`). Lidraughts
+    immediately closes all other active sessions to prevent unauthorised access.
+  </Step>
+</Steps>
+
+To disable 2FA later, return to `GET /account/twofactor` and submit your
+current TOTP code via `POST /account/twofactor/disable`.
+
+<Info>
+  Resetting your password also disables 2FA. Re-enable it after a password
+  reset if your account requires it.
+</Info>
+
+## Kid mode
+
+Kid mode restricts communication features — chat messages, forum posts, and
+direct messages are disabled. It is intended for children or players who want
+a distraction-free experience.
+
+Toggle kid mode at **Settings → Kid mode** (`GET /account/kid`). The setting
+is saved with `POST /account/kid`. You can also read and write the kid status
+via the API:
+
+```text
+GET  /api/account/kid        # returns { "kid": true|false }
+POST /api/account/kid?v=1    # enable
+POST /api/account/kid?v=0    # disable
+```
+
+## OAuth token creation
+
+Personal access tokens allow scripts and third-party tools to interact with
+your account through the Lidraughts API without sharing your password.
+
+<Steps>
+  <Step title="Open the token page">
+    Go to **Settings → API access tokens** (`GET /account/oauth/token`).
+  </Step>
+
+  <Step title="Create a new token">
+    Click **Generate a personal access token** (`GET /account/oauth/token/create`)
+    and fill in:
+
+    - **Description** — a label so you remember what the token is for.
+    - **Scopes** — tick only the permissions your application needs. Available
+      scopes include reading preferences, reading/writing games, managing
+      challenges, and more.
+
+    Submit the form (`POST /account/oauth/token/create`). The token is shown
+    **once** — copy it immediately and store it somewhere safe.
+  </Step>
+
+  <Step title="Use the token">
+    Pass the token in the `Authorization` header for API requests:
+
+    ```bash
+    curl https://lidraughts.org/api/account \
+      -H "Authorization: Bearer your_token_here"
+    ```
+  </Step>
+</Steps>
+
+To revoke a token, click **Delete** next to it on the token list page. The
+delete route is `POST /account/oauth/token/:id/delete`.
+
+## Account security
+
+Review and manage active login sessions at **Settings → Security**
+(`GET /account/security`). The page lists every active session with its
+approximate location and device information.
+
+To sign out a specific session, click **Revoke** next to it. To sign out
+everywhere except your current session:
+
+```text
+POST /account/signout/all
+```
+
+This is useful if you logged in on a shared computer and forgot to sign out.
+
+## Closing your account
+
+<Warning>
+  Closing your account is irreversible. Your username, games, and all associated
+  data will be permanently removed and the username will not be available for
+  re-registration.
+</Warning>
+
+If you still want to proceed, go to **Settings → Close account**
+(`GET /account/close`), enter your password to confirm, and submit the form
+(`POST /account/closeConfirm`). You will be signed out immediately.

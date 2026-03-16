@@ -1,0 +1,175 @@
+---
+title: "Streaming API"
+description: "Real-time event streaming with NDJSON"
+---
+
+# Streaming API
+
+Streaming endpoints deliver data as it becomes available using **NDJSON** (newline-delimited JSON). Each line in the response is a self-contained JSON object. This avoids the need to buffer the entire response before parsing.
+
+## NDJSON format
+
+```
+{"type":"gameStart","game":{"id":"abcd1234"}}
+{"type":"challenge","challenge":{"id":"efgh5678"}}
+
+{"type":"gameStart","game":{"id":"ijkl9012"}}
+```
+
+- Each non-empty line is a valid JSON object.
+- **Empty lines** are keepalive signals — discard them.
+- The stream ends when the server closes the connection.
+
+## Keepalives
+
+The server sends empty lines every few seconds to prevent proxies and load balancers from closing idle connections. Your client should ignore lines that are empty or whitespace-only.
+
+## Reconnection strategy
+
+If the connection drops, wait 1–5 seconds (with exponential backoff) and reconnect. Re-send any initial parameters (e.g. user IDs) on reconnect.
+
+---
+
+## Stream incoming challenges and game starts
+
+```
+GET /api/stream/event
+```
+
+A persistent stream of challenges directed at the authenticated user, and game start notifications. Used by bots and external clients to react in real time. Requires `bot:play` and `challenge:read` scopes.
+
+```bash
+curl --no-buffer \
+  -H "Authorization: Bearer lip_yourtoken" \
+  https://lidraughts.org/api/stream/event
+```
+
+Event types:
+
+<ResponseField name="type" type="string">
+  Either `challenge` or `gameStart`.
+</ResponseField>
+
+<Expandable title="challenge event">
+  <ResponseField name="challenge.id" type="string">
+    The 8-character challenge ID.
+  </ResponseField>
+  <ResponseField name="challenge.challenger" type="object">
+    The user who sent the challenge.
+  </ResponseField>
+  <ResponseField name="challenge.destUser" type="object">
+    The user the challenge is directed at.
+  </ResponseField>
+  <ResponseField name="challenge.variant" type="object">
+    Variant information (`key`, `name`).
+  </ResponseField>
+  <ResponseField name="challenge.rated" type="boolean">
+    Whether the game would be rated.
+  </ResponseField>
+  <ResponseField name="challenge.timeControl" type="object">
+    Clock or correspondence time control.
+  </ResponseField>
+</Expandable>
+
+<Expandable title="gameStart event">
+  <ResponseField name="game.id" type="string">
+    The 8-character game ID.
+  </ResponseField>
+</Expandable>
+
+```json
+// Challenge received
+{
+  "type": "challenge",
+  "challenge": {
+    "id": "abcd1234",
+    "status": "created",
+    "challenger": {"id": "opponent", "rating": 1800},
+    "destUser": {"id": "me", "rating": 1750},
+    "variant": {"key": "standard", "name": "Standard"},
+    "rated": true,
+    "timeControl": {"type": "clock", "limit": 300, "increment": 3}
+  }
+}
+
+// Game started
+{"type": "gameStart", "game": {"id": "abcd1234"}}
+```
+
+---
+
+## Stream live games by users
+
+```
+POST /api/stream/games-by-users
+```
+
+Streams the live games of a set of users as NDJSON. When a game starts or finishes for any listed user, an event is emitted. Send up to 300 user IDs as a comma-separated plain text body.
+
+```bash
+curl -X POST \
+  --no-buffer \
+  -H "Content-Type: text/plain" \
+  --data 'user1,user2,user3' \
+  https://lidraughts.org/api/stream/games-by-users
+```
+
+Each emitted event is a game object in the same JSON structure as `/api/game/:id`.
+
+---
+
+## Stream a specific game
+
+```
+GET /api/bot/game/stream/{id}
+```
+
+Streams the full state of a bot game in progress. See the [Bot API](/api/bot) for details on event types. Requires `bot:play` scope.
+
+<ParamField path="id" type="string" required>
+  The game ID.
+</ParamField>
+
+```bash
+curl --no-buffer \
+  -H "Authorization: Bearer lip_bottoken" \
+  https://lidraughts.org/api/bot/game/stream/abcd1234
+```
+
+---
+
+## Tips for working with NDJSON streams
+
+<Tip>
+  Always use `--no-buffer` with curl when consuming NDJSON streams, otherwise curl will buffer output and you won't see events in real time.
+</Tip>
+
+```bash
+# Good — disable curl's output buffer
+curl --no-buffer -H "Authorization: Bearer lip_yourtoken" \
+  https://lidraughts.org/api/stream/event
+
+# Parse with jq line by line
+curl --no-buffer -H "Authorization: Bearer lip_yourtoken" \
+  https://lidraughts.org/api/stream/event | while IFS= read -r line; do
+    [ -z "$line" ] && continue  # skip keepalives
+    echo "$line" | jq '.'
+done
+```
+
+In Python:
+
+```python
+import requests, json
+
+with requests.get(
+    "https://lidraughts.org/api/stream/event",
+    headers={"Authorization": "Bearer lip_yourtoken"},
+    stream=True
+) as resp:
+    for raw_line in resp.iter_lines():
+        if not raw_line:  # keepalive
+            continue
+        event = json.loads(raw_line)
+        print(event["type"])
+```

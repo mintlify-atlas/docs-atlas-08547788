@@ -1,0 +1,150 @@
+---
+title: "Studies"
+description: "Collaborative shared analysis boards for training and preparation"
+---
+
+Studies are persistent, shareable analysis boards. They support multiple chapters, collaborative editing, PDN import and export, and broadcast relay. Studies are used for opening preparation, game analysis, lessons, and draughts content creation.
+
+## Creating a study
+
+<Steps>
+  <Step title="Open the study creation form">
+    Visit [lidraughts.org/study](https://lidraughts.org/study) and click **New study**, or use the direct URL `/study` with a POST request.
+  </Step>
+  <Step title="Name your study">
+    Give the study a descriptive name. The name appears in the study list and is used in the URL slug.
+  </Step>
+  <Step title="Set visibility">
+    Choose between **Public** (visible to everyone), **Unlisted** (accessible via direct link), or **Private** (only visible to you and invited members).
+  </Step>
+  <Step title="Create">
+    Click **Create study**. The study opens with one default chapter.
+  </Step>
+</Steps>
+
+## Adding chapters
+
+Each study can contain multiple chapters. Chapters are independent positions or games within the study.
+
+To add a chapter, click **+** in the chapter list and choose one of the chapter types:
+
+<Tabs>
+  <Tab title="Empty">
+    Starts from the standard initial position for the selected variant. Use this for opening analysis or fresh exploration.
+  </Tab>
+  <Tab title="From position">
+    Set up a custom starting position using the board editor or by entering a FEN string. Useful for analysing specific endgames or middle-game structures.
+  </Tab>
+  <Tab title="PDN import">
+    Import a game or annotated game from PDN notation. The full move tree, including comments and variations, is preserved.
+  </Tab>
+</Tabs>
+
+Each chapter has its own:
+- Variant setting (Standard, Frisian, Russian, etc.)
+- Orientation (board perspective)
+- Analysis mode (free, practice with computer, hide next move)
+
+## Inviting collaborators
+
+Study members can contribute to the analysis. To invite someone:
+
+1. Open the study and click **Members** in the side panel.
+2. Search for the user by username.
+3. Add them as a **Contributor** (can edit) or **Viewer** (read-only).
+
+Collaborators can:
+- Add moves and variations
+- Post comments on moves
+- Draw arrows and highlight squares
+- Add glyphs (move annotations)
+
+<Info>
+Multiple contributors can edit a study simultaneously. Changes are synced in real time over WebSocket.
+</Info>
+
+## Public, unlisted, and private studies
+
+| Visibility | Behaviour |
+|---|---|
+| Public | Appears in the public study list at `/study/all`. Searchable. |
+| Unlisted | Not in the public list. Accessible to anyone with the direct URL. |
+| Private | Only visible to you and invited members. Does not appear in any public listing. |
+
+To change visibility, open the study settings panel and update the **Visibility** field.
+
+You can browse your studies by type:
+
+```text
+/study/mine/hot       — your studies, sorted by popularity
+/study/public/hot     — your public studies
+/study/private/hot    — your private studies
+/study/member/hot     — studies you are a member of
+```
+
+## Cloning a study
+
+You can clone any public study to create your own copy:
+
+```text
+GET /study/{id}/clone
+```
+
+The cloned study is an independent copy. Changes to the clone do not affect the original.
+
+## PDN export
+
+Export a full study or a single chapter as a PDN file:
+
+```text
+GET /study/{id}.pdn              — full study
+GET /study/{id}/{chapterId}.pdn  — single chapter
+```
+
+The PDN includes move trees, comments, glyphs, and annotations.
+
+## Broadcasting relay
+
+Lidraughts supports live game broadcasting via the relay feature. A relay study automatically updates its chapters with moves from an external source as a live event progresses.
+
+<Steps>
+  <Step title="Create a broadcast">
+    Visit [lidraughts.org/broadcast/new](https://lidraughts.org/broadcast/new) and fill in the relay details: name, description, and the source URL that provides PDN game data.
+  </Step>
+  <Step title="Configure the source">
+    Enter the URL of the PDN feed. Lidraughts polls this URL periodically and updates the study chapters with new moves.
+  </Step>
+  <Step title="Share the relay">
+    The broadcast has a public URL at `/broadcast/{slug}/{id}`. Share this URL with your audience to watch the event live.
+  </Step>
+</Steps>
+
+## Embedding studies
+
+Study chapters can be embedded on external websites as an interactive board:
+
+```text
+GET /study/embed/{id}/{chapterId}
+```
+
+Embed the board using an iframe:
+
+```html
+<iframe src="https://lidraughts.org/study/embed/{id}/{chapterId}"
+        width="600" height="600">
+</iframe>
+```
+
+<Note>
+Embedded study boards are interactive — viewers can navigate the move tree, but cannot make edits.
+</Note>
+
+## Searching studies
+
+Search for public studies by keyword:
+
+```text
+GET /study/search?q={keyword}
+```
+
+Results are paginated and sorted by relevance.

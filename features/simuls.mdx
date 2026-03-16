@@ -1,0 +1,121 @@
+---
+title: "Simultaneous exhibitions"
+description: "Simultaneous exhibitions — play many opponents at once"
+---
+
+A simultaneous exhibition (simul) is an event where one player — the host — plays multiple opponents at the same time, each on a separate board. Simuls are a traditional format for strong players to engage with many challengers at once.
+
+## What simuls are
+
+In a Lidraughts simul:
+
+- The **host** plays all games simultaneously, moving from board to board.
+- **Challengers** each play a single game against the host.
+- The host uses a separate clock with extra time to account for playing many games.
+- Games are played to completion on all boards. The simul finishes when every game has ended.
+
+Simuls are visible at [lidraughts.org/simul](https://lidraughts.org/simul). Featured simuls from strong or titled players appear on the homepage.
+
+## Creating a simul (as host)
+
+<Steps>
+  <Step title="Open the simul creation form">
+    Visit [lidraughts.org/simul/new](https://lidraughts.org/simul/new) or click **Host a simul** on the simul home page.
+  </Step>
+  <Step title="Configure the simul">
+    Set the following options:
+
+    | Field | Description |
+    |---|---|
+    | Name | Display name for the simul. Defaults to your username. |
+    | Variants | One or more variants challengers can choose from. All seven variants are supported. |
+    | Clock time | Base clock time for each game (5–180 minutes). |
+    | Clock increment | Increment in seconds per move (0–180 seconds). |
+    | Extra time for host | Additional minutes added to the host's clock per game to compensate for playing multiple boards (0–120 minutes). |
+    | Color | Your color in all games: White, Black, or Random. |
+    | Target score | Optional winning percentage target the host sets as a goal. |
+    | Description | Optional text shown on the simul page. |
+    | Team restriction | Optionally restrict participation to members of a specific team. |
+  </Step>
+  <Step title="Create the simul">
+    Click **Create**. The simul page opens in the **Created** (lobby) state. Challengers can now join.
+  </Step>
+  <Step title="Accept challengers">
+    Review the list of applicants. Accept or reject individual applicants using the **Accept** and **Reject** buttons. Accepted applicants are shown with a checkmark.
+  </Step>
+  <Step title="Start the simul">
+    When you are ready to begin, click **Start**. All accepted challengers are paired and their games begin simultaneously.
+  </Step>
+</Steps>
+
+<Info>
+A simul requires at least 2 accepted challengers before it can start.
+</Info>
+
+### Host eligibility for a featured simul
+
+Simuls are promoted to the Lidraughts homepage automatically when:
+- The host has a rating of 2100 or above, **or** holds an official title (GM, IM, etc.)
+- The simul has fewer than 80 applicants
+- The simul is in the Created state
+
+### Arbiter
+
+A simul can have an assigned arbiter who has moderation access to the simul page. The arbiter can settle disputes and apply game timeouts.
+
+## Joining as a challenger
+
+<Steps>
+  <Step title="Find a simul">
+    Visit [lidraughts.org/simul](https://lidraughts.org/simul) to see open simuls. Click on one to open the simul page.
+  </Step>
+  <Step title="Choose your variant">
+    Select the variant you want to play from the variants offered by the host.
+  </Step>
+  <Step title="Join">
+    Click **Join**. You are added to the applicant list.
+  </Step>
+  <Step title="Wait for the host">
+    The host reviews applicants and accepts or rejects them. If accepted, your game starts automatically when the host starts the simul.
+  </Step>
+  <Step title="Withdraw">
+    If you change your mind before the simul starts, click **Withdraw** to remove yourself from the applicant list.
+  </Step>
+</Steps>
+
+<Note>
+If a simul has an allowed-players list, only users on that list can join.
+</Note>
+
+## How the simul runs
+
+Once started:
+
+- Each accepted challenger gets their own game against the host.
+- The host's interface shows all ongoing games simultaneously. The host can navigate between boards.
+- The clock for each game starts when the host opens that board.
+- The host's extra time is added to their clock at the start of each individual game.
+
+Games proceed normally under the rules of the chosen variant. Players can draw, resign, or run out of time just as in a regular game.
+
+## Result tracking
+
+The simul page shows live results as games finish:
+
+| Stat | Description |
+|---|---|
+| Wins | Games the host won |
+| Draws | Drawn games |
+| Losses | Games the challengers won |
+| Ongoing | Games still in progress |
+| Win% | Host's current winning percentage (wins + 0.5 × draws) / finished |
+
+If the host set a target percentage, the page also shows how many additional wins or draws are needed to reach the target.
+
+## Exporting simul games
+
+All games from a completed simul can be exported as PDN:
+
+```text
+GET /simul/{id}/export
+```

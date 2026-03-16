@@ -1,0 +1,221 @@
+---
+title: "Installation"
+description: "Step-by-step guide to installing Lidraughts"
+---
+
+This guide walks you through installing Lidraughts from source. Complete the [requirements](/self-hosting/requirements) page first — all dependencies must be in place before you begin.
+
+<Steps>
+
+<Step title="Clone the repository">
+
+Clone the Lidraughts source from GitHub:
+
+```bash
+git clone https://github.com/roepstoep/lidraughts.git
+cd lidraughts
+```
+
+The repository uses a workspace-style monorepo. The Scala server lives at the root, and all frontend modules are under `ui/`.
+
+</Step>
+
+<Step title="Install SBT">
+
+Lidraughts requires **SBT 0.13.18**, as specified in `project/build.properties`. Install it with your package manager or manually:
+
+<CodeGroup>
+
+```bash apt (Debian / Ubuntu)
+echo "deb https://repo.scala-sbt.org/scalasbt/debian all main" | sudo tee /etc/apt/sources.list.d/sbt.list
+curl -sL "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x2EE0EA64E40A89B84B2DF73499E82A75642AC823" | sudo apt-key add
+sudo apt-get update && sudo apt-get install sbt
+```
+
+```bash dnf (Fedora / RHEL)
+curl https://bintray.com/sbt/rpm/rpm | sudo tee /etc/yum.repos.d/bintray-sbt-rpm.repo
+sudo dnf install sbt
+```
+
+</CodeGroup>
+
+Verify the version:
+
+```bash
+sbt sbt-version
+# Should report 0.13.18
+```
+
+</Step>
+
+<Step title="Install Node.js and Yarn">
+
+The UI build system requires Node.js ≥ 10 and Yarn 1.x:
+
+<CodeGroup>
+
+```bash nvm
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+nvm install --lts
+npm install -g yarn
+```
+
+```bash apt (Debian / Ubuntu)
+curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+sudo apt-get install -y nodejs
+npm install -g yarn
+```
+
+</CodeGroup>
+
+</Step>
+
+<Step title="Install and start MongoDB">
+
+Lidraughts stores all data in MongoDB. Install and start it:
+
+<CodeGroup>
+
+```bash apt (Debian / Ubuntu)
+wget -qO - https://www.mongodb.org/static/pgp/server-4.4.asc | sudo apt-key add -
+echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/4.4 multiverse" \
+  | sudo tee /etc/apt/sources.list.d/mongodb-org-4.4.list
+sudo apt-get update && sudo apt-get install -y mongodb-org
+sudo systemctl enable --now mongod
+```
+
+```bash dnf (Fedora / RHEL)
+sudo dnf install mongodb-org
+sudo systemctl enable --now mongod
+```
+
+</CodeGroup>
+
+Confirm MongoDB is running:
+
+```bash
+mongo --eval "db.runCommand({ connectionStatus: 1 })"
+```
+
+The default URI `mongodb://127.0.0.1:27017/lidraughts` is used by Lidraughts and requires no authentication for local use.
+
+</Step>
+
+<Step title="Install UI dependencies">
+
+Install all frontend packages using Yarn workspaces from the repository root:
+
+```bash
+yarn
+```
+
+This installs dependencies for the root workspace and all `ui/` sub-packages in a single pass.
+
+</Step>
+
+<Step title="Build the UI">
+
+Compile SCSS and TypeScript assets. Use the development build while getting started:
+
+```bash
+cd ui
+yarn gulp css-dev
+```
+
+Or run the watcher that rebuilds SCSS on every file change:
+
+```bash
+cd ui
+yarn gulp css
+```
+
+For production builds (minified output):
+
+```bash
+cd ui
+yarn gulp css-prod
+```
+
+Built CSS files are written to `public/css/`.
+
+<Info>
+  Each UI module (analyse, round, lobby, etc.) also has its own `gulpfile.js` for compiling JavaScript via TypeScript. Run `yarn gulp` inside individual module directories to build them, or compile everything via SBT's asset pipeline.
+</Info>
+
+</Step>
+
+<Step title="Create your application configuration">
+
+Lidraughts configuration is layered: `conf/base.conf` holds all defaults, and your own file overrides them. Create your config by copying the example:
+
+```bash
+cp doc/example_application.conf conf/application.conf
+```
+
+The minimal contents of `doc/example_application.conf` are:
+
+```hocon
+include "base"
+
+#override base.conf members
+
+http {
+  port = 9663
+}
+net {
+  domain = "yourdomain.org"
+}
+```
+
+At minimum, set `net.domain` to the domain where your instance will be served. See the [configuration guide](/self-hosting/configuration) for all available settings.
+
+<Warning>
+  The default `play.crypto.secret` in `conf/base.conf` is a publicly known value. You **must** override it with a unique secret in your `conf/application.conf` before running in any non-trivial environment.
+</Warning>
+
+</Step>
+
+<Step title="Run the application">
+
+Copy the startup script template and launch:
+
+```bash
+cp bin/dev.default bin/dev
+chmod +x bin/dev
+./bin/dev run
+```
+
+SBT downloads the Scala 2.11.12 compiler and all library dependencies on first run. This can take **10–20 minutes** depending on network speed and cache state.
+
+Once you see output like:
+
+```
+[info] play - Application started (Dev)
+```
+
+...Lidraughts is running at `http://localhost:9663`.
+
+<Tip>
+  Run `./bin/dev compile` first to download dependencies and compile without starting the server. This lets you catch compile errors before attempting to serve traffic.
+</Tip>
+
+</Step>
+
+</Steps>
+
+## What's next
+
+<CardGroup cols={2}>
+  <Card title="Configuration" icon="sliders" href="/self-hosting/configuration">
+    Tune all the settings in your `application.conf`.
+  </Card>
+  <Card title="Running" icon="play" href="/self-hosting/running">
+    Start in dev or production mode, manage logs, and stop the server.
+  </Card>
+  <Card title="Nginx" icon="server" href="/self-hosting/nginx">
+    Set up a reverse proxy for WebSocket support and SSL termination.
+  </Card>
+  <Card title="Draughtsnet" icon="cpu" href="/self-hosting/draughtsnet">
+    Connect computer analysis workers to your instance.
+  </Card>
+</CardGroup>

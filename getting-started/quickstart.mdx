@@ -1,0 +1,174 @@
+---
+title: "Quickstart"
+description: "Start playing draughts on Lidraughts in minutes"
+---
+
+<Note>
+  No account is needed to play on Lidraughts. You can jump straight into a game
+  anonymously from the lobby.
+</Note>
+
+Lidraughts supports both 10x10 and 8x8 draughts boards, with variants including
+Frisian, Antidraughts, Frysk!, Breakthrough, Russian, and Brazilian draughts.
+This guide walks you through finding and playing your first game.
+
+## Playing without an account
+
+Visit the lobby at `https://lidraughts.org/` (`GET /`). You can create and join
+games immediately as a guest. Anonymous games use a session cookie to link you
+to your side of the board — no registration required.
+
+Guest players can:
+- Create open challenges (hooks) in the lobby
+- Accept challenges from other players
+- Play against the computer (`/setup/ai`)
+- Challenge a specific friend by URL
+
+Some features — rated games, tournaments, and correspondence games — require a
+registered account.
+
+## Starting a game
+
+<Steps>
+  <Step title="Open the lobby">
+    Go to `https://lidraughts.org/`. The lobby shows open game seeks from other
+    players in real time. You can filter by time control, variant, and rated or
+    casual mode using the **Filter** panel.
+  </Step>
+
+  <Step title="Create a game">
+    Click **Create a game** to open the game setup dialog. Configure your
+    preferred options:
+
+    **Variant** — choose from:
+    - **Standard** (10x10, international rules)
+    - **Frisian** (10x10 with capturing kings)
+    - **Antidraughts** (force your opponent to capture all pieces)
+    - **Frysk!** (starts from a 5-piece setup)
+    - **Breakthrough** (first to promote wins)
+    - **Russian** (8x8, kings fly)
+    - **Brazilian** (8x8, similar to Russian)
+
+    **Time control** — one of three modes:
+
+    | Mode | Description |
+    |---|---|
+    | Real-time | Both players share a clock. Enter minutes + increment in seconds. |
+    | Correspondence | Days per turn (1–7). Moves are made asynchronously. |
+    | Unlimited | No clock. Casual only. |
+
+    **Mode** — **Casual** or **Rated**. Rated games require an account and affect
+    your rating. Rated unlimited games are not allowed.
+
+    **Color** — **White**, **Black**, or **Random**.
+
+    Click **OK** to post the game as an open seek in the lobby. Other players
+    will see it and can accept it.
+  </Step>
+
+  <Step title="Join a game from the lobby">
+    Open seeks are shown as tiles in the lobby. Each tile displays the
+    requester's username (or "Anonymous"), their rating, the time control, and
+    the variant. Click any tile to accept the game and be redirected to the
+    board.
+
+    The lobby WebSocket at `GET /lobby/socket/v:apiVersion` keeps the list live
+    — no page refresh needed.
+  </Step>
+
+  <Step title="Play the game">
+    Once both players are connected the game starts. The board URL follows this
+    pattern:
+
+    ```text
+    # Spectator view (watcher)
+    GET /{gameId}/{color}
+    # e.g. https://lidraughts.org/aB3cD4eF/white
+
+    # Player view (your turn — uses a 12-character full ID)
+    GET /{fullId}
+    # e.g. https://lidraughts.org/aB3cD4eFwXyZ
+    ```
+
+    The `gameId` is 8 characters; the `fullId` appends a 4-character player
+    token. Sharing the `gameId/{color}` URL lets anyone spectate without being
+    able to move pieces.
+  </Step>
+</Steps>
+
+## Understanding the game interface
+
+During a game you will see:
+
+<CardGroup cols={2}>
+  <Card title="Board" icon="grid-2x2">
+    The draughts board, oriented from your perspective. Captured pieces appear
+    off to the side. Move animations and legal-move highlights are on by default.
+  </Card>
+  <Card title="Clock" icon="clock">
+    Both players' remaining time. Your clock counts down only when it is your
+    turn. The increment is added to your clock after each move.
+  </Card>
+  <Card title="Move list" icon="list">
+    All moves in PDN notation. Click any move to replay the position up to that
+    point without leaving the game.
+  </Card>
+  <Card title="Chat" icon="message-square">
+    An in-game chat visible to both players and spectators. Spectators have a
+    separate chat channel.
+  </Card>
+</CardGroup>
+
+## Basic controls
+
+### Resigning
+
+To resign, click the **Resign** button (flag icon) below the board and confirm
+the prompt. The route that handles the resignation is:
+
+```text
+POST /{fullId}/resign
+```
+
+This immediately ends the game and grants the win to your opponent.
+
+### Offering a draw
+
+Click the **½** (draw offer) button to send a draw offer to your opponent. They
+can accept or decline. If accepted, the game ends as a draw. You cannot offer a
+draw again immediately after your opponent declines.
+
+### Playing against the computer
+
+For offline practice, go to `https://lidraughts.org/setup/ai` (`GET /setup/ai`).
+Choose a variant and the computer level (powered by the
+[Scan 3.1](https://github.com/rhalbersma/scan) engine for all 10x10 variants).
+The game starts immediately — no waiting for an opponent.
+
+### Challenging a specific player
+
+You can send a direct challenge to any user. The challenge is created with:
+
+```text
+POST /api/challenge/:user
+```
+
+Or visit `https://lidraughts.org/@/:username` and click **Challenge** on their
+profile. The other player receives a notification and can accept or decline.
+
+## What to explore next
+
+<CardGroup cols={2}>
+  <Card title="Create an account" icon="user-plus" href="/getting-started/account-setup">
+    Register to track your rating, join tournaments, and save your games.
+  </Card>
+  <Card title="Variants" icon="shapes" href="/features/variants">
+    Learn the rules of Frisian, Antidraughts, Breakthrough, Russian, and more.
+  </Card>
+  <Card title="Puzzles" icon="puzzle" href="/features/puzzles">
+    Solve daily tactics puzzles to sharpen your game.
+  </Card>
+  <Card title="Tournaments" icon="trophy" href="/features/tournaments">
+    Compete in arena and Swiss-format tournaments.
+  </Card>
+</CardGroup>

@@ -1,0 +1,126 @@
+---
+title: "Game analysis"
+description: "Analyze your games with the Scan 3.1 draughts engine"
+---
+
+Lidraughts provides a full-featured analysis board powered by the [Scan 3.1](https://github.com/rhalbersma/scan) draughts engine by Fabien Letouzey. Analysis is available for all 10×10 variants. You can analyse completed games, import positions from PDN, or explore positions freely on the analysis board.
+
+## Opening the analysis board
+
+<CardGroup cols={2}>
+  <Card title="After a game" icon="flag">
+    Click **Analyse** on the game result screen or on any completed game page. The analysis board opens at the final position with the full move list.
+  </Card>
+  <Card title="From the game page" icon="search">
+    On any game replay page, click the **Analysis** button or navigate directly to `/{gameId}/{color}/analysis`.
+  </Card>
+  <Card title="Free analysis board" icon="layout">
+    Visit [lidraughts.org/analysis](https://lidraughts.org/analysis) to open a blank analysis board. Set up any position using the built-in position editor.
+  </Card>
+  <Card title="PDN import" icon="file">
+    Visit [lidraughts.org/analysis](https://lidraughts.org/analysis) and use the PDN import button, or POST to `/analysis/pdn` to load a game from PDN notation.
+  </Card>
+</CardGroup>
+
+## Engine analysis (Scan 3.1)
+
+Scan 3.1 is the engine used for all 10×10 draughts variants on Lidraughts. It supports Standard, Frisian, Antidraughts, Frysk!, and Breakthrough.
+
+<Note>
+8×8 variants (Russian and Brazilian) do not currently support Scan engine analysis in the same way as 10×10 variants.
+</Note>
+
+### Requesting analysis
+
+After a game you can request a full computer evaluation:
+
+```text
+POST /{gameId}/request-analysis
+```
+
+This queues the game for analysis by the draughtsnet worker pool. Once complete, move annotations with engine evaluations appear on the game replay page.
+
+### Real-time engine in the analysis board
+
+On the analysis board the engine runs in real time in your browser (client-side) or via the draughtsnet API. Evaluation is shown as a numeric score for the side to move.
+
+## Computer evaluation
+
+The engine evaluation displayed on the analysis board represents the engine's assessment of the position:
+
+- Positive scores favour white; negative scores favour black.
+- A score near 0 indicates a roughly equal position.
+- Large values (positive or negative) indicate a decisive advantage.
+
+The evaluation updates as you navigate through the move tree.
+
+## Navigating the move tree
+
+The move list on the right side of the analysis board is a full interactive move tree:
+
+- Click any move to jump to that position on the board.
+- Use the keyboard arrow keys to step forward and backward through the game.
+- The **Start** and **End** buttons jump to the beginning or end of the game.
+
+### Adding variations
+
+To add an alternative line:
+
+1. Navigate to the move from which you want to branch.
+2. Play a different move on the board.
+3. The new move is added as a variation (indented) in the move list.
+
+Variations can be nested to any depth.
+
+## Arrow annotations
+
+You can draw arrows and highlight squares directly on the board to annotate key ideas:
+
+- **Right-click and drag** from a square to draw an arrow.
+- **Right-click a square** to highlight it.
+- Arrows and highlights are shown to collaborators in studies and to viewers when sharing.
+
+## Importing PDN
+
+To import a game or position from PDN:
+
+<Steps>
+  <Step title="Open the analysis board">
+    Go to [lidraughts.org/analysis](https://lidraughts.org/analysis).
+  </Step>
+  <Step title="Paste PDN">
+    Click the PDN import button and paste your PDN text into the input field.
+  </Step>
+  <Step title="Load">
+    Click **Load**. The game or position is loaded into the analysis board with the full move tree.
+  </Step>
+</Steps>
+
+You can also POST PDN directly:
+
+```text
+POST /analysis/pdn
+```
+
+## Sharing analysis
+
+- The URL of the analysis board updates as you navigate, so you can share a link to a specific move.
+- To share a specific position, copy the URL from the browser — it includes the position state.
+- Games can be embedded on external sites using the embed URL:
+
+```text
+GET /embed/{gameId}
+GET /embed/{gameId}/{color}
+```
+
+The embed shows an interactive board with move navigation controls.
+
+## PDN export from analysis
+
+From any game replay page you can download the PDN file including computer annotations:
+
+```text
+GET /game/export/{gameId}.pdn
+```
+
+The exported PDN includes clock times, opening names, and engine evaluations when available.

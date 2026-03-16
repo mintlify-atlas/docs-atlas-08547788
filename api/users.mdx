@@ -1,0 +1,258 @@
+---
+title: "Users"
+description: "API endpoints for user data"
+---
+
+# Users
+
+## Get a user profile
+
+```
+GET /api/user/{name}
+```
+
+Returns public information about a user.
+
+### Path parameters
+
+<ParamField path="name" type="string" required>
+  The username (case-insensitive).
+</ParamField>
+
+### Example
+
+```bash
+curl https://lidraughts.org/api/user/draughtsmaster
+```
+
+```json
+{
+  "id": "draughtsmaster",
+  "username": "DraughtsMaster",
+  "online": true,
+  "perfs": {
+    "standard": { "games": 120, "rating": 1850, "rd": 45, "prog": 12 }
+  },
+  "createdAt": 1609459200000,
+  "seenAt": 1700000000000,
+  "playTime": { "total": 36000, "tv": 1200 },
+  "url": "https://lidraughts.org/@/draughtsmaster",
+  "count": {
+    "all": 120, "rated": 100, "ai": 5,
+    "win": 60, "loss": 40, "draw": 20
+  },
+  "streaming": false,
+  "playing": false
+}
+```
+
+---
+
+## Get user activity
+
+```
+GET /api/user/{name}/activity
+```
+
+Returns the recent activity feed of a user (games played, puzzles solved, tournaments entered, etc.).
+
+<ParamField path="name" type="string" required>
+  The username.
+</ParamField>
+
+```bash
+curl https://lidraughts.org/api/user/draughtsmaster/activity
+```
+
+---
+
+## Get rating history
+
+```
+GET /api/user/{name}/rating-history
+```
+
+Returns the rating history for all performance types.
+
+<ParamField path="name" type="string" required>
+  The username.
+</ParamField>
+
+```bash
+curl https://lidraughts.org/api/user/draughtsmaster/rating-history
+```
+
+```json
+[
+  {
+    "name": "Standard",
+    "points": [[2021, 0, 1, 1750], [2021, 1, 15, 1800]]
+  }
+]
+```
+
+Each point is `[year, month (0-indexed), day, rating]`.
+
+---
+
+## Get users a player is following
+
+```
+GET /api/user/{name}/following
+```
+
+Streams the users that `name` is following as NDJSON.
+
+<ParamField path="name" type="string" required>
+  The username.
+</ParamField>
+
+```bash
+curl https://lidraughts.org/api/user/draughtsmaster/following
+```
+
+---
+
+## Get a player's followers
+
+```
+GET /api/user/{name}/followers
+```
+
+Streams the followers of `name` as NDJSON.
+
+<ParamField path="name" type="string" required>
+  The username.
+</ParamField>
+
+```bash
+curl https://lidraughts.org/api/user/draughtsmaster/followers
+```
+
+---
+
+## Get multiple users by IDs
+
+```
+POST /api/users
+```
+
+Look up multiple users at once by a comma-separated list of usernames in the request body. Returns up to 300 users.
+
+### Request body
+
+Plain text, comma-separated usernames:
+
+```
+user1,user2,user3
+```
+
+```bash
+curl -X POST \
+  -H "Content-Type: text/plain" \
+  --data 'user1,user2,user3' \
+  https://lidraughts.org/api/users
+```
+
+---
+
+## Get online status of users
+
+```
+GET /api/users/status
+```
+
+Returns the online, playing, and streaming status of up to 50 users.
+
+<ParamField query="ids" type="string" required>
+  Comma-separated list of up to 50 user IDs.
+</ParamField>
+
+```bash
+curl "https://lidraughts.org/api/users/status?ids=user1,user2,user3"
+```
+
+```json
+[
+  { "id": "user1", "name": "User1", "online": true, "playing": false },
+  { "id": "user2", "name": "User2", "online": false }
+]
+```
+
+---
+
+## Get titled players
+
+```
+GET /api/users/titled
+```
+
+Streams titled players as NDJSON. Optionally filter by title and online status.
+
+<ParamField query="titles" type="string">
+  Comma-separated list of titles to filter by (e.g. `GM,IM,WGM`). Available titles are standard FIDE and draughts-specific titles.
+</ParamField>
+
+<ParamField query="online" type="boolean">
+  When `true`, only return players currently online.
+</ParamField>
+
+```bash
+curl --no-buffer \
+  "https://lidraughts.org/api/users/titled?titles=GM,IM&online=true"
+```
+
+---
+
+## Get head-to-head record
+
+```
+GET /api/crosstable/{u1}/{u2}
+```
+
+Returns the head-to-head score between two users.
+
+<ParamField path="u1" type="string" required>
+  First username.
+</ParamField>
+
+<ParamField path="u2" type="string" required>
+  Second username.
+</ParamField>
+
+<ParamField query="matchup" type="boolean">
+  When `true`, also include the current ongoing matchup data if available.
+</ParamField>
+
+```bash
+curl https://lidraughts.org/api/crosstable/alice/bob
+```
+
+```json
+{
+  "users": { "alice": 7.5, "bob": 5.5 },
+  "nbGames": 13
+}
+```
+
+---
+
+## Get top players by performance type
+
+```
+GET /player/top/{nb}/{perfKey}
+```
+
+Returns the top `nb` players for a given performance type.
+
+<ParamField path="nb" type="integer" required>
+  Number of players to return (max 200).
+</ParamField>
+
+<ParamField path="perfKey" type="string" required>
+  Performance type key. One of: `standard`, `frisian`, `frysk`, `antidraughts`, `breakthrough`, `russian`, `brazilian`, `pool`, `english`, `bullet`, `blitz`, `rapid`, `classical`, `ultraBullet`.
+</ParamField>
+
+```bash
+curl https://lidraughts.org/player/top/10/standard
+```

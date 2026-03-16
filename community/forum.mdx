@@ -1,0 +1,131 @@
+---
+title: "Forum"
+description: "Community discussion forums on Lidraughts"
+---
+
+The Lidraughts forum is organized into categories covering general discussion, draughts strategy, announcements, and team-specific boards. All registered users can read and post in public categories.
+
+## Forum categories
+
+Visit [lidraughts.org/forum](https://lidraughts.org/forum) to see the full list of categories. Each category shows the title, description, number of topics, and the most recent post.
+
+Categories include global boards visible to all users as well as private boards that are only accessible to members of specific teams.
+
+<Info>
+  The forum is not available to users who have Kids mode enabled.
+</Info>
+
+## Recent posts
+
+The **Recent posts** page at [lidraughts.org/forum/recent](https://lidraughts.org/forum/recent) shows the latest posts across all categories you have access to. Use this page to catch up on active discussions without navigating category by category.
+
+## Searching the forum
+
+Use the search page at [lidraughts.org/forum/search](https://lidraughts.org/forum/search) to find posts by keyword. Enter your search term and the results are paginated.
+
+```text
+/forum/search?text=draughts+tactics
+```
+
+Search covers all public categories. Staff forum categories are only included in results for users with staff access.
+
+## Creating a topic
+
+<Steps>
+  <Step title="Open a category">
+    Navigate to the category where you want to post, for example `/forum/general-draughts-discussion`.
+  </Step>
+  <Step title="Click New topic">
+    Click the **New topic** button. This takes you to the topic form at `/forum/<category>/form`.
+  </Step>
+  <Step title="Write your topic">
+    Enter a title and the body text. Both are required.
+  </Step>
+  <Step title="Complete the captcha">
+    Solve the draughts captcha to prevent spam.
+  </Step>
+  <Step title="Submit">
+    Click **Post** to publish. You are redirected to the new topic page.
+  </Step>
+</Steps>
+
+<Warning>
+  Topic creation is rate-limited to 2 topics per 5 minutes per IP address. Repeated submissions above this limit will be rejected.
+</Warning>
+
+## Posting a reply
+
+Open any topic and scroll to the reply form at the bottom of the last page. Type your reply and click **Post**.
+
+- Replies are rate-limited to 4 posts per 5 minutes per IP address.
+- You can edit your own post after submitting.
+- Closed or archived topics do not show the reply form.
+
+<Note>
+  A topic is considered **archived** once it has been inactive for an extended period. You can still read it but cannot add new replies.
+</Note>
+
+## Editing a post
+
+You can edit your own posts after publishing. The edit form is available on each post and submits to `/forum/post/<id>`. Changes are applied immediately.
+
+## Reactions
+
+You can add emoji reactions to forum posts. Click the reaction button on a post to toggle a reaction on or off. Reactions are visible to all readers.
+
+## Forum rules
+
+The forum follows the Lidraughts terms of service. Key expectations:
+
+<AccordionGroup>
+  <Accordion title="Stay on topic">
+    Post in the category that best matches your subject. Off-topic threads may be moved or closed.
+  </Accordion>
+  <Accordion title="Be respectful">
+    Personal attacks, harassment, and hate speech are not allowed. Treat other users the way you would want to be treated.
+  </Accordion>
+  <Accordion title="No spam">
+    Do not post duplicate messages, flood a thread with repeated content, or advertise unrelated services.
+  </Accordion>
+  <Accordion title="No illegal content">
+    Sharing illegal material, piracy links, or content that violates applicable law is prohibited.
+  </Accordion>
+</AccordionGroup>
+
+## Moderation
+
+Moderation actions are available to users with the appropriate permissions.
+
+<CardGroup cols={2}>
+  <Card title="Close a topic" icon="lock">
+    Toggle a topic open or closed. Closed topics are read-only. Available to category moderators.
+  </Card>
+  <Card title="Hide a topic" icon="eye-slash">
+    Hide a topic from public view. Requires the `ModerateForum` permission.
+  </Card>
+  <Card title="Sticky a topic" icon="thumbtack">
+    Pin a topic to the top of the category. Available to category moderators.
+  </Card>
+  <Card title="Delete a post" icon="trash">
+    Remove an individual post. Available to category moderators.
+  </Card>
+</CardGroup>
+
+### Moderator actions summary
+
+| Action | Route | Who can do it |
+|---|---|---|
+| Close / reopen topic | `POST /forum/:categ/:slug/close` | Category moderator |
+| Hide / unhide topic | `POST /forum/:categ/:slug/hide` | `ModerateForum` role |
+| Sticky / unsticky topic | `POST /forum/:categ/:slug/sticky` | Category moderator |
+| Delete a post | `POST /forum/:categ/delete/:id` | Category moderator |
+
+## Topic participants
+
+You can see the list of usernames who have posted in a topic by requesting `/forum/participants/<topicId>`. This returns a JSON array of usernames sorted alphabetically.
+
+## Team forums
+
+Each team has its own private forum category visible only to members. Navigate to the team page and click the forum link. Posting in a team forum follows the same flow as the global forum, but write access is restricted to team members.
+
+See [Teams](/community/teams) for more information about team management.

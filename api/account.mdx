@@ -1,0 +1,174 @@
+---
+title: "Account"
+description: "API endpoints for the authenticated user's account"
+---
+
+# Account
+
+<Warning>
+  All endpoints on this page require authentication via a Bearer token. Include the header `Authorization: Bearer lip_yourtoken` with every request. See [Authentication](/api/authentication) for details.
+</Warning>
+
+---
+
+## Get my profile
+
+```
+GET /api/account
+```
+
+Returns the full public and private profile of the authenticated user. Requires no specific scope beyond a valid token.
+
+```bash
+curl -H "Authorization: Bearer lip_yourtoken" \
+  https://lidraughts.org/api/account
+```
+
+```json
+{
+  "id": "myusername",
+  "username": "MyUsername",
+  "online": true,
+  "perfs": {
+    "standard": { "games": 250, "rating": 1900, "rd": 40, "prog": 5 }
+  },
+  "createdAt": 1609459200000,
+  "profile": {
+    "country": "NL",
+    "bio": "Draughts enthusiast from the Netherlands"
+  },
+  "count": {
+    "all": 250, "rated": 200, "win": 130, "loss": 80, "draw": 40
+  }
+}
+```
+
+---
+
+## Get my ongoing games
+
+```
+GET /api/account/playing
+```
+
+Returns the list of ongoing games for the authenticated user.
+
+<ParamField query="nb" type="integer">
+  Maximum number of games to return (max 50). Default: `9`.
+</ParamField>
+
+```bash
+curl -H "Authorization: Bearer lip_yourtoken" \
+  https://lidraughts.org/api/account/playing
+```
+
+```json
+{
+  "nowPlaying": [
+    {
+      "gameId": "abcd1234",
+      "fullId": "abcd1234efgh",
+      "color": "white",
+      "fen": "W:W...",
+      "hasMoved": true,
+      "isMyTurn": false,
+      "opponent": { "id": "opponent", "rating": 1750 },
+      "perf": "standard",
+      "rated": true,
+      "secondsLeft": 240
+    }
+  ]
+}
+```
+
+---
+
+## Get my email address
+
+```
+GET /api/account/email
+```
+
+Returns the email address associated with the account. Requires the `email:read` scope.
+
+```bash
+curl -H "Authorization: Bearer lip_yourtoken" \
+  https://lidraughts.org/api/account/email
+```
+
+```json
+{ "email": "me@example.com" }
+```
+
+---
+
+## Get kid mode status
+
+```
+GET /api/account/kid
+```
+
+Returns whether kid mode is enabled for the account. Requires the `preference:read` scope.
+
+```bash
+curl -H "Authorization: Bearer lip_yourtoken" \
+  https://lidraughts.org/api/account/kid
+```
+
+```json
+{ "kid": false }
+```
+
+---
+
+## Toggle kid mode
+
+```
+POST /api/account/kid
+```
+
+Enables or disables kid mode. Requires the `preference:write` scope.
+
+<ParamField query="v" type="boolean" required>
+  Set to `true` to enable kid mode, `false` to disable.
+</ParamField>
+
+```bash
+# Enable kid mode
+curl -X POST \
+  -H "Authorization: Bearer lip_yourtoken" \
+  "https://lidraughts.org/api/account/kid?v=true"
+```
+
+---
+
+## Get my preferences
+
+```
+GET /api/account/preferences
+```
+
+Returns all account preferences (board style, clock display, etc.). Requires the `preference:read` scope.
+
+```bash
+curl -H "Authorization: Bearer lip_yourtoken" \
+  https://lidraughts.org/api/account/preferences
+```
+
+```json
+{
+  "prefs": {
+    "dark": false,
+    "transp": false,
+    "bgImg": "",
+    "is3d": false,
+    "theme": "brown",
+    "pieceSet": "cburnett",
+    "clockTenths": 1,
+    "clockBar": true,
+    "clockSound": true,
+    "autoQueen": 2,
+    "confirmResign": 1
+  }
+}
+```

@@ -1,0 +1,131 @@
+---
+title: "Messaging"
+description: "Private messages between Lidraughts users"
+---
+
+Lidraughts provides a private messaging system that lets registered users exchange direct messages with each other. Messages are organized into threads, one per conversation.
+
+<Info>
+  Messaging is not available to users with Kids mode enabled.
+</Info>
+
+## Inbox
+
+Your inbox is at [lidraughts.org/inbox](https://lidraughts.org/inbox). It shows all message threads you are part of, sorted by most recently updated. Each row shows:
+
+- The other participant's username
+- The thread subject
+- An unread indicator if you have unread messages
+- The date of the last message
+
+Pagination is available for inboxes with many threads.
+
+## Unread count
+
+The number of unread threads is cached and updated periodically. You can fetch the current unread count programmatically via the API endpoint:
+
+```text
+GET /inbox/unread-count
+```
+
+This endpoint is API-only and returns a JSON object with the count.
+
+## Composing a new message
+
+<Steps>
+  <Step title="Open the compose form">
+    Go to [lidraughts.org/inbox/new](https://lidraughts.org/inbox/new). You can also pre-fill the recipient by navigating to `https://lidraughts.org/inbox/new?user=<username>`.
+  </Step>
+  <Step title="Enter the recipient">
+    Type the recipient's username. The form validates that the user exists and that they accept messages from you.
+
+    <Note>
+      A user may configure their message preference to only accept messages from players they follow, or to block all new messages. If a user does not accept messages from you, you will see an error on submit.
+    </Note>
+  </Step>
+  <Step title="Enter a subject and message">
+
+    | Field | Limits |
+    |---|---|
+    | **Subject** | 3–100 characters |
+    | **Message** | 3–8 000 characters |
+
+  </Step>
+  <Step title="Send">
+    Click **Send**. You are redirected to the new thread at `/inbox/<id>`.
+  </Step>
+</Steps>
+
+<Warning>
+  New thread creation is rate-limited. Accounts less than 3 days old consume 2 credits per thread instead of 1. The limit resets every 24 hours. Exceeding the limit redirects you back to the inbox.
+</Warning>
+
+## Message threads
+
+Each conversation is a single thread. Open a thread from your inbox to read all messages in chronological order.
+
+### Replying
+
+To reply in an existing thread, type in the reply box at the bottom of the thread and click **Send**. Reply text must be at least 3 characters.
+
+- Threads are capped at **200 posts**. Once a thread reaches this limit it is marked as too large to reply to.
+- If the other participant has blocked you, your reply is silently discarded.
+- Duplicate consecutive posts (identical text sent twice in a row) are ignored.
+
+### Thread limits and archiving
+
+| Condition | Effect |
+|---|---|
+| More than 200 posts | Thread becomes read-only (`isTooBig`) |
+| Created by the system (`lidraughts` user) | Thread is read-only (`isLidraughts`) |
+
+## Deleting a thread
+
+To delete a thread, open it and click **Delete**, or send a `POST` request to `/inbox/<id>/delete`. Deletion only removes the thread from your view — the other participant's copy is unaffected.
+
+Deleting a thread also removes the associated notification from your notification list.
+
+## Batch operations
+
+You can perform actions on multiple threads at once from the inbox. Select threads and choose an action:
+
+<CardGroup cols={3}>
+  <Card title="Mark as read" icon="envelope-open">
+    Mark selected threads as read, clearing the unread indicator.
+  </Card>
+  <Card title="Mark as unread" icon="envelope">
+    Mark selected threads as unread to revisit them later.
+  </Card>
+  <Card title="Delete" icon="trash">
+    Delete selected threads from your inbox in one action.
+  </Card>
+</CardGroup>
+
+Batch actions are submitted to `POST /inbox/batch` with a comma-separated list of thread IDs and an `action` parameter (`read`, `unread`, or `delete`). Up to 200 threads can be processed in a single batch request.
+
+## Blocking and reporting abusive messages
+
+If you receive unwanted or abusive messages:
+
+<Steps>
+  <Step title="Block the sender">
+    Open the sender's profile page and click **Block**. Blocked users cannot send you new messages. Any new thread they attempt to start is silently dropped.
+  </Step>
+  <Step title="Report the message">
+    Use the **Report** button on the user's profile to flag the account for moderator review. Include relevant context in your report.
+  </Step>
+</Steps>
+
+<Note>
+  When a message thread is opened, the system checks whether the other participant has blocked you. If they have, the reply form is hidden.
+</Note>
+
+### Automatic muting
+
+Lidraughts applies automatic spam and toxicity filtering to new message threads:
+
+- Threads flagged as spam are silently deleted for the recipient.
+- Threads from troll-flagged accounts are muted unless the recipient follows the sender.
+- New accounts (under 30 days old) sending messages with certain content patterns may have their threads muted automatically.
+
+Muted threads are deleted from the recipient's view but remain visible to the sender.

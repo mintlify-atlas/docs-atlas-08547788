@@ -1,0 +1,281 @@
+---
+title: "Bot API"
+description: "Build automated draughts bots on Lidraughts"
+---
+
+# Bot API
+
+The Bot API lets you build automated draughts engines that play on Lidraughts. A bot account is a special account type that uses the `bot:play` OAuth scope.
+
+<Warning>
+  Upgrading an account to a bot account is **irreversible**. Use a dedicated account.
+</Warning>
+
+## UCI move format for draughts
+
+Lidraughts uses numeric square notation for UCI moves. Squares are numbered 1–50 (for international draughts). A move is represented as the concatenation of the from-square and to-square:
+
+```
+"3227"  → move from square 32 to square 27
+"4540"  → capture from square 45 to square 40
+```
+
+---
+
+## Upgrade to a bot account
+
+```
+POST /api/bot/command
+```
+
+Upgrade the authenticated account to a bot account. Requires the `bot:play` scope.
+
+```bash
+curl -X POST \
+  -H "Authorization: Bearer lip_bottoken" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d '' \
+  https://lidraughts.org/api/bot/account/upgrade
+```
+
+<Note>
+  The route is `POST /api/bot/*cmd` where `cmd = "account/upgrade"`. Send an empty body.
+</Note>
+
+---
+
+## Stream incoming events
+
+```
+GET /api/stream/event
+```
+
+Streams all incoming challenges and game start events as NDJSON. Keep this connection open to receive events in real time. Requires `bot:play` and `challenge:read` scopes.
+
+```bash
+curl --no-buffer \
+  -H "Authorization: Bearer lip_bottoken" \
+  https://lidraughts.org/api/stream/event
+```
+
+Event types:
+
+```json
+// A new challenge arrived
+{"type": "challenge", "challenge": {"id": "abcd1234", "challenger": {...}, "variant": {...}}}
+
+// A game has started (after accepting a challenge)
+{"type": "gameStart", "game": {"id": "abcd1234"}}
+```
+
+<Note>
+  The server sends empty lines (keepalives) periodically to prevent the connection from timing out.
+</Note>
+
+---
+
+## Stream game state
+
+```
+GET /api/bot/game/stream/{id}
+```
+
+Streams the state of a game the bot is playing. Requires `bot:play` scope.
+
+<ParamField path="id" type="string" required>
+  The game ID.
+</ParamField>
+
+```bash
+curl --no-buffer \
+  -H "Authorization: Bearer lip_bottoken" \
+  https://lidraughts.org/api/bot/game/stream/abcd1234
+```
+
+Event types sent on this stream:
+
+```json
+// Initial game state (first event)
+{
+  "type": "gameFull",
+  "id": "abcd1234",
+  "variant": {"key": "standard"},
+  "clock": {"initial": 300000, "increment": 3000},
+  "white": {"id": "me", "rating": 1800},
+  "black": {"id": "opponent", "rating": 1750},
+  "state": {
+    "type": "gameState",
+    "moves": "",
+    "wtime": 300000,
+    "btime": 300000,
+    "winc": 3000,
+    "binc": 3000,
+    "status": "started"
+  }
+}
+
+// Subsequent move events
+{
+  "type": "gameState",
+  "moves": "3227 1823",
+  "wtime": 295000,
+  "btime": 300000,
+  "status": "started"
+}
+
+// Game over
+{"type": "gameState", "moves": "...", "status": "mate", "winner": "white"}
+```
+
+---
+
+## Make a move
+
+```
+POST /api/bot/game/{id}/move/{uci}
+```
+
+Plays a move in a bot game. Requires `bot:play` scope.
+
+<ParamField path="id" type="string" required>
+  The game ID.
+</ParamField>
+
+<ParamField path="uci" type="string" required>
+  The move in UCI draughts notation (e.g. `3227`).
+</ParamField>
+
+<ParamField query="offeringDraw" type="boolean">
+  Set to `true` to offer or accept a draw with this move.
+</ParamField>
+
+```bash
+curl -X POST \
+  -H "Authorization: Bearer lip_bottoken" \
+  "https://lidraughts.org/api/bot/game/abcd1234/move/3227"
+```
+
+---
+
+## Send a chat message
+
+```
+POST /api/bot/game/{id}/chat
+```
+
+Sends a chat message in a bot game. Requires `bot:play` scope. Internally routed through `POST /api/bot/*cmd` with `cmd = "game/{id}/chat"`.
+
+<ParamField body="room" type="string" required>
+  `player` for the player chat or `spectator` for the spectator room.
+</ParamField>
+
+<ParamField body="text" type="string" required>
+  The message to send.
+</ParamField>
+
+```bash
+curl -X POST \
+  -H "Authorization: Bearer lip_bottoken" \
+  -d 'room=player&text=Good+luck!' \
+  https://lidraughts.org/api/bot/game/abcd1234/chat
+```
+
+---
+
+## Abort a game
+
+```
+POST /api/bot/game/{id}/abort
+```
+
+Aborts the game (only possible at the start). Requires `bot:play` scope. Routed through `POST /api/bot/*cmd` with `cmd = "game/{id}/abort"`.
+
+```bash
+curl -X POST \
+  -H "Authorization: Bearer lip_bottoken" \
+  https://lidraughts.org/api/bot/game/abcd1234/abort
+```
+
+---
+
+## Resign a game
+
+```
+POST /api/bot/game/{id}/resign
+```
+
+Resigns the game. Requires `bot:play` scope. Routed through `POST /api/bot/*cmd` with `cmd = "game/{id}/resign"`.
+
+```bash
+curl -X POST \
+  -H "Authorization: Bearer lip_bottoken" \
+  https://lidraughts.org/api/bot/game/abcd1234/resign
+```
+
+---
+
+## Get online bots
+
+```
+GET /player/bots
+```
+
+Returns an HTML page listing online bot accounts. No authentication required.
+
+```bash
+curl https://lidraughts.org/player/bots
+```
+
+---
+
+## Bot loop example
+
+A minimal bot loop in pseudocode:
+
+```python
+import requests, json
+
+HEADERS = {"Authorization": "Bearer lip_bottoken"}
+BASE = "https://lidraughts.org"
+
+def stream_events():
+    with requests.get(f"{BASE}/api/stream/event", headers=HEADERS, stream=True) as r:
+        for line in r.iter_lines():
+            if line:  # skip keepalive empty lines
+                yield json.loads(line)
+
+def play_game(game_id):
+    url = f"{BASE}/api/bot/game/stream/{game_id}"
+    with requests.get(url, headers=HEADERS, stream=True) as r:
+        for line in r.iter_lines():
+            if not line:
+                continue
+            event = json.loads(line)
+            if event["type"] == "gameFull":
+                state = event["state"]
+            elif event["type"] == "gameState":
+                state = event
+            else:
+                continue
+
+            if state["status"] != "started":
+                break
+
+            # Determine the bot's color and whether it's our turn
+            # then call your draughts engine to pick a move
+            move = engine.best_move(state["moves"])  # returns e.g. "3227"
+            requests.post(
+                f"{BASE}/api/bot/game/{game_id}/move/{move}",
+                headers=HEADERS
+            )
+
+for event in stream_events():
+    if event["type"] == "challenge":
+        challenge_id = event["challenge"]["id"]
+        requests.post(
+            f"{BASE}/api/challenge/{challenge_id}/accept",
+            headers=HEADERS
+        )
+    elif event["type"] == "gameStart":
+        play_game(event["game"]["id"])
+```

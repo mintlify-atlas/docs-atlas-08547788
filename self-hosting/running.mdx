@@ -1,0 +1,203 @@
+---
+title: "Running Lidraughts"
+description: "Start and manage your Lidraughts server"
+---
+
+## Development mode
+
+The fastest way to start Lidraughts is through the provided `bin/dev` script. Copy the template and launch:
+
+```bash
+cp bin/dev.default bin/dev
+chmod +x bin/dev
+./bin/dev run
+```
+
+The script sets the necessary JVM flags and passes arguments to SBT:
+
+```sh
+export JAVA_OPTS="-Xms2048M -Xmx2560M -XX:ReservedCodeCacheSize=128m \
+  -XX:+CMSClassUnloadingEnabled -XX:+UseConcMarkSweepGC \
+  -XX:+ExitOnOutOfMemoryError -Dkamon.auto-start=true"
+
+export SERVE_ASSETS=0
+
+sbt -Dhttp.port=9663 "$@"
+```
+
+Key points from the script:
+
+- **2 GB minimum heap** (`-Xms2048M`), up to **2.5 GB** (`-Xmx2560M`). The comments recommend 4 GB if available.
+- **Port 9663** is passed as a system property to Play.
+- `SERVE_ASSETS=0` means Nginx (or another proxy) is expected to serve `public/` directly. Set it to `1` to have Play serve assets itself (convenient but not recommended).
+
+Once started, SBT enters an interactive console. The application compiles and starts automatically:
+
+```
+[info] play - Application started (Dev)
+[info] play - Listening for HTTP on /0.0.0.0:9663
+```
+
+### Hot reload
+
+In development mode, Play watches source files and recompiles changed Scala files on the next request. You do not need to restart SBT after editing server code.
+
+## Compiling only
+
+To download all dependencies and compile without starting the server:
+
+```bash
+./bin/dev compile
+```
+
+This is useful for CI or to warm up the SBT cache before deployment.
+
+## Production mode
+
+For production, build a self-contained staged artifact using `sbt stage`:
+
+```bash
+sbt stage
+```
+
+This creates a runnable distribution at `target/universal/stage/`. To start the staged build:
+
+```bash
+target/universal/stage/bin/lidraughts \
+  -Dconfig.file=conf/application.conf \
+  -Dhttp.port=9663 \
+  -Dplay.crypto.secret="your-secret-here"
+```
+
+Or use environment variables:
+
+```bash
+export APPLICATION_SECRET="your-secret-here"
+target/universal/stage/bin/lidraughts \
+  -Dconfig.file=conf/application.conf \
+  -Dhttp.port=9663
+```
+
+<Info>
+  `sbt stage` does not start the server — it compiles and packages the application. Start it separately by running the generated launcher script in `target/universal/stage/bin/`.
+</Info>
+
+## UI builds
+
+The UI assets must be compiled separately from the Scala backend. Run these from the repository root:
+
+| Command | Description |
+|---|---|
+| `cd ui && yarn gulp css` | Compile SCSS with file watching (development) |
+| `cd ui && yarn gulp css-dev` | Compile SCSS once without watching |
+| `cd ui && yarn gulp css-prod` | Compile and minify SCSS for production |
+
+For production deployments, run `css-prod` before staging the Scala build.
+
+### JavaScript modules
+
+Each UI module (e.g. `ui/analyse`, `ui/round`, `ui/lobby`) has its own `gulpfile.js`. Build a specific module:
+
+```bash
+cd ui/analyse
+yarn gulp
+```
+
+Built JavaScript is written to `public/compiled/`. Built CSS is written to `public/css/`.
+
+## Environment variables
+
+| Variable | Description |
+|---|---|
+| `JAVA_OPTS` | JVM flags (heap size, GC settings, system properties) |
+| `SERVE_ASSETS` | Set to `1` to have Play serve `public/` directly; `0` (default) lets Nginx handle it |
+
+System properties can also override config:
+
+```bash
+sbt -Dhttp.port=9000 -Dnet.domain=localhost run
+```
+
+## Checking the server is running
+
+Lidraughts exposes a status endpoint:
+
+```bash
+curl http://localhost:9663/api/status
+```
+
+A successful response returns HTTP 200. You can also check the Draughtsnet status:
+
+```bash
+curl http://localhost:9663/draughtsnet/status
+```
+
+## Logs
+
+Lidraughts uses [Logback](http://logback.qos.ch/) for structured logging. The configuration file is `conf/logback.xml`. Log output goes to stdout by default when running via SBT.
+
+For production, redirect stdout to a file or use a log aggregator:
+
+```bash
+target/universal/stage/bin/lidraughts \
+  -Dconfig.file=conf/application.conf \
+  -Dhttp.port=9663 \
+  >> /var/log/lidraughts/app.log 2>&1 &
+```
+
+Akka logging is configured in `base.conf`:
+
+```hocon
+akka {
+  loggers = ["akka.event.slf4j.Slf4jLogger"]
+  loglevel = INFO
+  stdout-loglevel = INFO
+  log-config-on-start = off
+  log-dead-letters-during-shutdown = off
+}
+```
+
+## Stopping the server
+
+In SBT dev mode, type `exit` at the SBT prompt, or send `SIGTERM` to the process:
+
+```bash
+# Find the Play process
+pgrep -f lidraughts
+
+# Stop gracefully
+kill <pid>
+```
+
+For the staged production binary, the launcher script respects `SIGTERM` and performs a graceful shutdown.
+
+## Running as a systemd service
+
+To run Lidraughts as a managed system service:
+
+```ini /etc/systemd/system/lidraughts.service
+[Unit]
+Description=Lidraughts
+After=network.target mongod.service
+
+[Service]
+Type=simple
+User=lidraughts
+WorkingDirectory=/opt/lidraughts
+Environment="JAVA_OPTS=-Xms2048M -Xmx2560M -XX:ReservedCodeCacheSize=128m -XX:+CMSClassUnloadingEnabled -XX:+UseConcMarkSweepGC -XX:+ExitOnOutOfMemoryError"
+ExecStart=/opt/lidraughts/target/universal/stage/bin/lidraughts -Dconfig.file=/opt/lidraughts/conf/application.conf -Dhttp.port=9663
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Enable and start:
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable lidraughts
+sudo systemctl start lidraughts
+sudo journalctl -u lidraughts -f  # follow logs
+```

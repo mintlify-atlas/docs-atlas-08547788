@@ -1,0 +1,92 @@
+---
+title: "Simuls"
+description: "API endpoints for simultaneous exhibitions"
+---
+
+# Simuls
+
+A simultaneous exhibition (simul) is an event where one player (the host) plays multiple opponents at the same time, each on a separate board.
+
+---
+
+## List active simuls
+
+```
+GET /api/simul
+```
+
+Returns all active (pending, created, and started) simuls, and the most recently finished ones. No authentication required.
+
+```bash
+curl https://lidraughts.org/api/simul
+```
+
+```json
+{
+  "pending": [],
+  "created": [
+    {
+      "id": "abcd1234",
+      "name": "GM Example's Simul",
+      "host": { "id": "gmexample", "rating": 2400, "gameRating": 2380 },
+      "variants": [{"key": "standard", "name": "Standard"}],
+      "clock": { "limit": 120, "increment": 1 },
+      "applicants": 12,
+      "pairings": 0,
+      "isRunning": false
+    }
+  ],
+  "started": [],
+  "finished": []
+}
+```
+
+---
+
+## Export simul games
+
+```
+GET /api/simul/{id}/games
+```
+
+Exports all games from a simul as a PDN or NDJSON stream. Only available after the simul has finished.
+
+<ParamField path="id" type="string" required>
+  The 8-character simul ID.
+</ParamField>
+
+<ParamField query="moves" type="boolean">
+  Include moves. Default: `true`.
+</ParamField>
+
+<ParamField query="tags" type="boolean">
+  Include PDN tags. Default: `true`.
+</ParamField>
+
+<ParamField query="clocks" type="boolean">
+  Include clock comments in the PDN.
+</ParamField>
+
+<ParamField query="evals" type="boolean">
+  Include analysis evaluations.
+</ParamField>
+
+<ParamField query="algebraic" type="boolean">
+  Use algebraic move notation.
+</ParamField>
+
+<Tabs>
+  <Tab title="PDN">
+    ```bash
+    curl --no-buffer \
+      https://lidraughts.org/api/simul/abcd1234/games > simul.pdn
+    ```
+  </Tab>
+  <Tab title="NDJSON">
+    ```bash
+    curl --no-buffer \
+      -H "Accept: application/x-ndjson" \
+      https://lidraughts.org/api/simul/abcd1234/games > simul.ndjson
+    ```
+  </Tab>
+</Tabs>
