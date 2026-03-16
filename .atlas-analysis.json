@@ -1,0 +1,125 @@
+{
+  "projectType": "saas",
+  "projectName": "Lidraughts",
+  "projectDescription": "Lidraughts is a free, open-source online draughts server supporting multiple board variants, live games, tournaments, puzzles, and analysis tools.",
+  "theme": "almond",
+  "primaryColor": "#7c7c7c",
+  "lightColor": "#101010",
+  "darkColor": "#c4c4c4",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Overview",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": ["introduction", "getting-started/quickstart", "getting-started/account-setup"]
+          },
+          {
+            "group": "Core Features",
+            "pages": [
+              "features/playing-games",
+              "features/variants",
+              "features/tournaments",
+              "features/puzzles",
+              "features/analysis",
+              "features/studies",
+              "features/simuls"
+            ]
+          },
+          {
+            "group": "Community",
+            "pages": [
+              "community/teams",
+              "community/forum",
+              "community/streamers",
+              "community/messaging"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Getting Started",
+            "pages": ["api/overview", "api/authentication"]
+          },
+          {
+            "group": "Endpoints",
+            "pages": [
+              "api/users",
+              "api/games",
+              "api/tournaments",
+              "api/challenges",
+              "api/account",
+              "api/bot",
+              "api/simuls",
+              "api/swiss"
+            ]
+          },
+          {
+            "group": "Streaming",
+            "pages": ["api/streaming"]
+          }
+        ]
+      },
+      {
+        "tab": "Self-Hosting",
+        "groups": [
+          {
+            "group": "Setup",
+            "pages": [
+              "self-hosting/requirements",
+              "self-hosting/installation",
+              "self-hosting/configuration"
+            ]
+          },
+          {
+            "group": "Operations",
+            "pages": [
+              "self-hosting/running",
+              "self-hosting/nginx",
+              "self-hosting/draughtsnet"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Live draughts games with real-time WebSocket play",
+    "Multiple draughts variants: Standard (10x10), Frisian, Antidraughts, Frysk!, Breakthrough, Russian, Brazilian",
+    "Arenas and Swiss tournaments",
+    "Tactics puzzles with spaced repetition training",
+    "Game analysis with Scan 3.1 engine integration",
+    "Collaborative studies and shared analysis",
+    "Simultaneous exhibitions (simuls)",
+    "Computer AI opponents via Draughtsnet",
+    "OAuth2 API for third-party integrations and bots",
+    "27-language i18n support via Crowdin",
+    "TV channels for featured live games",
+    "Teams, forums, and community features"
+  ],
+  "publicApiSurface": [
+    "GET /api/user/:name — Get public user data",
+    "GET /api/user/:name/activity — User activity feed",
+    "GET /api/game/:id — Export a single game",
+    "GET /api/games/user/:username — Export games by user",
+    "POST /api/users — Get multiple users by IDs",
+    "GET /api/tournament — List current tournaments",
+    "GET /api/tournament/:id — Get tournament details",
+    "GET /api/tournament/:id/results — Tournament results",
+    "POST /api/tournament — Create a tournament",
+    "POST /api/challenge/:user — Create a challenge",
+    "GET /api/account — Get authenticated user account",
+    "GET /api/account/playing — Current games of authenticated user",
+    "GET /api/bot/game/stream/:id — Stream a bot game",
+    "POST /api/bot/game/:id/move/:uci — Make a bot move",
+    "GET /api/stream/event — Stream incoming events",
+    "POST /api/stream/games-by-users — Stream games by user list",
+    "GET /api/simul — List active simuls",
+    "POST /api/swiss/new/:teamId — Create a Swiss tournament",
+    "GET /api/status — Server status"
+  ]
+}
